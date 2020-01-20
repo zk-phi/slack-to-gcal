@@ -1,0 +1,90 @@
+# slack-to-gcal
+
+A Slack slash command to create Google Calendar events.
+
+# Installation
+## Install `clasp`
+
+This app can easily be deployed to your Google Drive with `clasp` (an official Google Apps Script API client).
+
+See the repository page (https://github.com/google/clasp) for install instructions.
+
+After installing `clasp`, log-in to your Google account with `clasp login`.
+
+## Deploy the app to your Google account
+### Create an empty Google Apps Script item
+
+In your Google Drive page, create a new item of the type `Google Apps Script` and copy the ID in its URL.
+
+```
+https://script.google.com/d/<the-app-id>/edit
+```
+
+### Deploy the app
+
+Create a file named `.clasp.json` in the root directory of this repository, then register your app's ID as follows:
+
+```
+{"scriptId":"<the-app-id>"}
+```
+
+After setting `scriptId`, you can use `clasp` to deploy the app.
+
+```
+clasp push   # upload the code
+clasp deploy # publish as a webapp
+```
+
+When the app is deployed, a public URL is given to the deployed app.
+
+In the GAS app page, click `Publish` > `Deploy as web app` and you'll see the URL. The URL will be used to connect to Slack later.
+
+## Connect Slack to the GAS app
+### Create a Slack app
+
+Open the Slack API page (https://api.slack.com/) and click `Your Apps` then `Create New App`.
+
+### Setup a slash command (outgoing connection)
+
+In your Slack app page,
+
+- open `Slash Commands` tab and turn on the feature, then click `Create New Command`
+  - copy-and-paste the GAS app's public URL to the `Request URL` field
+
+- open `Basic Information` tab and copy the `Verification Token` in `App Credentials` section
+
+In your GAS app page,
+
+- click `File` > `Project Properties` > `Script Properties` and add a property as follows:
+
+```
+Key: SLACK_VERIFICATION_TOKEN
+Value: <the Slack Verification Token copied from the Slack app page>
+```
+
+### Setup a webhook (incoming connection)
+
+In your Slack app page,
+
+- open `Incoming Webhooks` tab and turn on the feature, then click `Add New Webhook to Workspace`
+
+In your GAS app page,
+
+- click `File` > `Project Properties` > `Script Properties` and add a property as follows:
+
+```
+Key: SLACK_WEBHOOKURL
+Value: <the Slack webhook URL created in the Slack app page>
+```
+
+## Completed !
+
+Now you can create Google Calendar events via the Slack slash command as follows:
+
+```
+/task Meet the brewers 12/30
+```
+
+```
+/task Vacation 8/1-31
+```
