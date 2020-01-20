@@ -20,6 +20,8 @@ In your Google Drive page, create a new item of the type `Google Apps Script` an
 https://script.google.com/d/<the-app-id>/edit
 ```
 
+FOR SECURITY REASONS, YOU MUST NOT SHARE THE ITEM (especially with Edit permission) WITH OTHERS.
+
 ### Deploy the app
 
 Create a file named `.clasp.json` in the root directory of this repository, then register your app's ID as follows:
