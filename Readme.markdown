@@ -77,6 +77,14 @@ Key: SLACK_WEBHOOKURL
 Value: <the Slack webhook URL created in the Slack app page>
 ```
 
+## Authorize the GAS app and test
+
+Open the GAS app page and run `doHelp` function manually from the menu `Execute` > `Execute a function` > `doHelp`.
+
+You'll be asked to permit the app to use Google Calendar API.
+
+After authorization, a help text will be posted to your Slack channel.
+
 ## Completed !
 
 Now you can create Google Calendar events via the Slack slash command as follows:
