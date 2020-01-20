@@ -98,3 +98,25 @@ Now you can create Google Calendar events via the Slack slash command as follows
 ```
 /task Vacation 8/1-31
 ```
+
+# Development
+
+When you modify the app and want to update the deployment, you can use `-i` option to redeploy without changing the public URL. If `-i` is omitted, you'll have multiple deployments with different versions, in different URLs.
+
+```
+clasp push
+clasp deploy -i <deployment ID>
+```
+
+You can see the list of deployments with `clasp deployments`:
+
+```
+$ clasp deployments
+2 Deployments.
+- <dev deployment ID> @HEAD
+- <deployment ID> @4
+```
+
+The first deployment tagged `@HEAD` is a read-only deployment for dev use, which always runs the latest version of the app. So you'll usually want to redeploy the second deployment.
+
+After creating unneeded deployments, you can also delete the deployment with `clasp undeploy <ID>` command.
