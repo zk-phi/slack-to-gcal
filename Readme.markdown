@@ -83,7 +83,7 @@ Value: <the Slack webhook URL created in the Slack app page>
 
 Open the GAS app page and run `doHelp` function manually from the menu `Execute` > `Execute a function` > `doHelp`.
 
-You'll be asked to permit the app to use Google Calendar API.
+You'll be asked to permit the app to use Google Calendar API and Slack API.
 
 After authorization, a help text will be posted to your Slack channel.
 
