@@ -127,7 +127,7 @@ function doAction (params) {
         postToSlack("", [
             {
                 type: "section",
-                text: { type: "mrkdwn", text: ":wastebasket: *EVENT DELETED:*" },
+                text: { type: "mrkdwn", text: ":wastebasket: *EVENT DELETED* :wastebasket:" },
             },
             formatEvent(event)
         ]);
