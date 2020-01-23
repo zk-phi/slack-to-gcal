@@ -57,13 +57,9 @@ function formatEvent (event) {
     var to = event.getEndTime();
     to.setDate(to.getDate() - 1);
 
-    var text = "- *" + event.getTitle() + "*" + (
-        from < to ? (
-            " from " + from.toLocaleDateString() + " to " + to.toLocaleDateString()
-        ) : (
-            " at " + from.toLocaleDateString()
-        )
-    );
+    var text = "- " + from.toLocaleDateString() + (
+        from < to ? " ~ " + to.toLocaleDateString() : ""
+    ) + " *" + event.getTitle() + "*";
 
     return {
         type: "section",
