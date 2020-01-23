@@ -70,7 +70,7 @@ function formatEvent (event) {
         text: { type: "mrkdwn", text: text },
         accessory: {
             type: "button",
-            text: {type: "plain_text", text: "Delete", emoji: false },
+            text: { type: "plain_text", text: "Delete", emoji: false },
             value: "delete:" + event.getId()
         }
     };
