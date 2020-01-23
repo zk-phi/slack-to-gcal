@@ -62,7 +62,7 @@ function formatEvent (event) {
             " from " + from.toLocaleDateString() + " to " + to.toLocaleDateString()
         ) : (
             " at " + from.toLocaleDateString()
-        ) + " (" + event.getId() + ")"
+        )
     );
 }
 
