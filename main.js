@@ -29,7 +29,7 @@ function parseStr (str) {
         to.setMonth(to.getMonth() + 1);
     }
 
-    if (from < today) {
+    if (!res[3] && from < today) {
         from.setYear(from.getYear() + 1);
         to.setYear(to.getYear() + 1);
     }
