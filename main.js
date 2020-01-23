@@ -3,21 +3,26 @@ var properties = PropertiesService.getScriptProperties();
 /* --- gcal utils */
 
 function parseStr (str) {
-    var res = str.match(/^(.*?) ([0-9]{4}\/)?([0-9]{1,2})\/([0-9]{1,2})( ?- ?([0-9]{1,2}))?$/);
+    /*                    1      3            4             5                 7              8 */
+    var res = str.match(/^(.*?) (([0-9]{4}\/)?([0-9]{1,2})\/([0-9]{1,2})( ?- ?([0-9]{1,2}))?|(tomorrow))$/i);
     if (!res) throw "Parse error";
 
     var today = new Date();
 
-    var from = new Date(
-        res[2] ? parseInt(res[2]) : today.getYear(),
-        parseInt(res[3]) - 1,
-        parseInt(res[4])
+    var from = res[8] ? (
+        new Date(today.getYear(), today.getMonth(), today.getDate() + 1)
+    ) : (
+        new Date(
+            res[3] ? parseInt(res[3]) : today.getYear(),
+            parseInt(res[4]) - 1,
+            parseInt(res[5])
+        )
     );
 
     var to = new Date(
         from.getYear(),
         from.getMonth(),
-        res[6] ? parseInt(res[6]) + 1 : from.getDate() + 1
+        res[7] ? parseInt(res[7]) + 1 : from.getDate() + 1
     );
 
     if (to < from) {
