@@ -66,8 +66,8 @@ function formatEvent (event) {
         text: { type: "mrkdwn", text: text },
         accessory: {
             type: "button",
-            text: { type: "plain_text", text: "Delete", emoji: false },
-            value: "delete:" + event.getId()
+            text: { type: "plain_text", text: ":pencil2:", emoji: true },
+            value: "edit:" + event.getId()
         }
     };
 }
@@ -82,6 +82,15 @@ function postToSlack (text, blocks) {
     });
 }
 
+function openSlackModal (trigger_id, view, push) {
+    return UrlFetchApp.fetch('https://slack.com/api/views.' + (push ? 'push' : 'open'), {
+        method: 'post',
+        contentType: 'application/json',
+        headers: { Authorization: 'Bearer ' + properties.getProperty("SLACK_ACCESS_TOKEN") },
+        payload: JSON.stringify({ trigger_id: trigger_id, view: view })
+    });
+}
+
 /* --- interface */
 
 function doAddEvent (params) {
@@ -93,6 +102,7 @@ function doAddEvent (params) {
         },
         formatEvent(res)
     ]);
+    return ContentService.createTextOutput("");
 }
 
 function doListEvent () {
@@ -103,6 +113,7 @@ function doListEvent () {
             text: { type: "mrkdwn", text: ":calendar: *UPCOMING EVENTS* :calendar:" },
         }
     ].concat(events.map(formatEvent)));
+    return ContentService.createTextOutput("");
 }
 
 function doHelp () {
@@ -111,6 +122,58 @@ function doHelp () {
         "- `/task hogehoge [yyyy/]mm/dd[-dd]` to add events\n" +
         "- `/task list` to see all events"
     );
+    return ContentService.createTextOutput("");
+}
+
+function actionEdit (event, params) {
+    openSlackModal(params.trigger_id, {
+        type: "modal",
+        title: { type: "plain_text", text: "Edit event" },
+        blocks: [
+            {
+                type: "section",
+                text: { type: "mrkdwn", text: "Delete event" },
+                accessory: {
+                    type: "button",
+                    text: { type: "plain_text", text: "Delete" },
+                    value: "confirmDelete:" + event.getId()
+                }
+            }
+        ]
+    });
+    return ContentService.createTextOutput("");
+}
+
+function actionConfirmDelete (event, params) {
+    openSlackModal(params.trigger_id, {
+        type: "modal",
+        callback_id: "confirmDelete",
+        private_metadata: event.getId(),
+        title: { type: "plain_text", text: "Delete event" },
+        submit: { type: "plain_text", text: "Delete" },
+        close: { type: "plain_text", text: "Cancel" },
+        blocks:[
+            {
+                type: "section",
+                text: { type: "mrkdwn", text: "Really delete event ?" }
+            }
+        ]
+    }, true);
+    return ContentService.createTextOutput("");
+}
+
+function submitDelete (event, params) {
+    postToSlack("", [
+        {
+            type: "section",
+            text: { type: "mrkdwn", text: ":wastebasket: *EVENT DELETED* :wastebasket:" },
+        },
+        formatEvent(event)
+    ]);
+    event.deleteEvent();
+    return ContentService.createTextOutput(JSON.stringify({
+        response_action: "clear"
+    })).setMimeType(ContentService.MimeType.JSON);
 }
 
 function doAction (params) {
@@ -119,17 +182,22 @@ function doAction (params) {
 
     var event = CalendarApp.getEventById(match[2]);
 
-    if (match[1] == "delete") {
-        postToSlack("", [
-            {
-                type: "section",
-                text: { type: "mrkdwn", text: ":wastebasket: *EVENT DELETED* :wastebasket:" },
-            },
-            formatEvent(event)
-        ]);
-        event.deleteEvent();
+    if (match[1] == "edit") {
+        return actionEdit(event, params);
+    } else if (match[1] == "confirmDelete") {
+        return actionConfirmDelete(event, params);
     } else {
         throw "Unknown action";
+    }
+}
+
+function doSubmit (params) {
+    var event = CalendarApp.getEventById(params.view.private_metadata);
+
+    if (params.view.callback_id == "confirmDelete") {
+        return submitDelete(event, params);
+    } else {
+        throw "Unknown view";
     }
 }
 
@@ -139,15 +207,23 @@ function doPost (e) {
     var verificationToken = params.token;
     if (verificationToken != properties.getProperty("SLACK_VERIFICATION_TOKEN")) throw "Invalid token";
 
-    if (params.actions) {
-        doAction(params);
-    } else if (params.text == '') {
-        doHelp();
-    } else if (params.text == 'list') {
-        doListEvent();
+    if (params.type) {
+        if (params.type == 'block_actions') {
+            return doAction(params);
+        } else if (params.type == 'view_submission') {
+            return doSubmit(params);
+        } else {
+            throw "Unknown action type";
+        }
     } else {
-        doAddEvent(params);
+        if (params.text == '') {
+            return doHelp();
+        } else if (params.text == 'list') {
+            return doListEvent();
+        } else {
+            return doAddEvent(params);
+        }
     }
 
-    return ContentService.createTextOutput("");
+    throw "Unexpedted error";
 }
