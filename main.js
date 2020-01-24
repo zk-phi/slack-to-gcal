@@ -1,6 +1,6 @@
 var properties = PropertiesService.getScriptProperties();
 
-/* --- gcal utils */
+/* --- utils */
 
 function parseStr (str) {
     /*                    1      3            4             5                 7              8 */
@@ -39,21 +39,6 @@ function parseStr (str) {
     return { title: res[1], from: from, to: to };
 }
 
-function addEventByStr (str) {
-    var res = parseStr(str);
-    return CalendarApp.getDefaultCalendar().createAllDayEvent(res.title, res.from, res.to);
-}
-
-function getEventList () {
-    var today = new Date();
-    return CalendarApp.getEvents(
-        new Date(today.getYear(), today.getMonth(), today.getDate()),
-        new Date('3000/01/01')
-    ).sort(function (x, y) {
-        return x.getStartTime() < y.getStartTime();
-    });
-}
-
 function formatEvent (event, withActions) {
     var from = event.getStartTime();
     var to = event.getEndTime();
@@ -80,8 +65,6 @@ function formatEvent (event, withActions) {
     return block;
 }
 
-/* --- slack utils */
-
 function postToSlack (text, blocks) {
     return UrlFetchApp.fetch(properties.getProperty("SLACK_WEBHOOK_URL"), {
         method: 'post',
@@ -102,25 +85,34 @@ function openSlackModal (trigger_id, view, push) {
 /* --- interface */
 
 function doAddEvent (params) {
-    var res = addEventByStr(params.text);
+    var res = parseStr(params.text);
+    var event = CalendarApp.getDefaultCalendar().createAllDayEvent(res.title, res.from, res.to)
+
     postToSlack("", [
         {
             type: "section",
             text: { type: "mrkdwn", text: ":white_check_mark: *EVENT ADDED* :white_check_mark:" },
         },
-        formatEvent(res, true)
+        formatEvent(event, true)
     ]);
+
     return ContentService.createTextOutput("");
 }
 
 function doListEvent () {
-    var events = getEventList();
+    var today = new Date();
+    var events = CalendarApp.getEvents(
+        new Date(today.getYear(), today.getMonth(), today.getDate()),
+        new Date('3000/01/01')
+    );
+
     postToSlack("", [
         {
             type: "section",
             text: { type: "mrkdwn", text: ":calendar: *UPCOMING EVENTS* :calendar:" },
         }
     ].concat(events.map(function (x) { return formatEvent(x, true); })));
+
     return ContentService.createTextOutput("");
 }
 
@@ -135,6 +127,7 @@ function doHelp () {
 
 function doActionEdit (params) {
     var event = CalendarApp.getEventById(params.actions[0].value);
+
     openSlackModal(params.trigger_id, {
         type: "modal",
         title: { type: "plain_text", text: "Edit event" },
@@ -151,11 +144,13 @@ function doActionEdit (params) {
             }
         ]
     });
+
     return ContentService.createTextOutput("");
 }
 
 function doActionConfirmDelete (params) {
     var event = CalendarApp.getEventById(params.actions[0].value);
+
     openSlackModal(params.trigger_id, {
         type: "modal",
         callback_id: "confirmDelete",
@@ -171,11 +166,13 @@ function doActionConfirmDelete (params) {
             formatEvent(event)
         ]
     }, true);
+
     return ContentService.createTextOutput("");
 }
 
 function doSubmitDelete (params) {
     var event = CalendarApp.getEventById(params.view.private_metadata);
+
     postToSlack("", [
         {
             type: "section",
@@ -183,7 +180,9 @@ function doSubmitDelete (params) {
         },
         formatEvent(event)
     ]);
+
     event.deleteEvent();
+
     return ContentService.createTextOutput(JSON.stringify({
         response_action: "clear"
     })).setMimeType(ContentService.MimeType.JSON);
