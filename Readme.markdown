@@ -2,7 +2,7 @@
 
 A Slack slash command to create Google Calendar events.
 
-# Installation
+# Setup
 ## Install `clasp`
 
 This app can easily be deployed to your Google Drive with `clasp` (an official Google Apps Script API client).
@@ -11,7 +11,7 @@ See the repository page (https://github.com/google/clasp) for install instructio
 
 After installing `clasp`, log-in to your Google account with `clasp login`.
 
-## Deploy the app to your Google account
+## Deploy the app to your Google Drive
 ### Create an empty Google Apps Script item
 
 In your Google Drive page, create a new item of the type `Google Apps Script` and copy the ID in its URL.
@@ -41,17 +41,34 @@ When the app is deployed, a public URL is given to the deployed app.
 
 In the GAS app page, click `Publish` > `Deploy as web app` and you'll see the URL. The URL will be used to connect to Slack later.
 
-## Connect Slack to the GAS app
+## Connect Slack app to the GAS app
 ### Create a Slack app
 
 Open the Slack API page (https://api.slack.com/) and click `Your Apps` then `Create New App`.
 
-### Setup a slash command (outgoing connection)
+### Authorize the GAS app to use the Slack APIs
+
+In your Slack app page,
+
+- open `OAuth & Permissions` tab and copy the OAuth Access Token
+
+In your GAS app page,
+
+- click `File` > `Project Properties` > `Script Properties` and add a property as follows:
+
+```
+Key: SLACK_ACCESS_TOKEN
+Value: <the Slack OAuth Access Token>
+```
+
+### Add a slash command to the Slack app and enable interaction with the GAS app
 
 In your Slack app page,
 
 - open `Slash Commands` tab and turn on the feature, then click `Create New Command`
   - copy-and-paste the GAS app's public URL to the `Request URL` field
+
+- open `Interactive Components` tab and turn on the feature, then copy-and-paste to the `Request URL` field again
 
 - open `Basic Information` tab and copy the `Verification Token` in `App Credentials` section
 
@@ -61,10 +78,10 @@ In your GAS app page,
 
 ```
 Key: SLACK_VERIFICATION_TOKEN
-Value: <the Slack Verification Token copied from the Slack app page>
+Value: <the Slack Verification Token>
 ```
 
-### Setup a webhook (incoming connection)
+### Add an incoming webhook to the Slack app
 
 In your Slack app page,
 
@@ -79,11 +96,11 @@ Key: SLACK_WEBHOOKURL
 Value: <the Slack webhook URL created in the Slack app page>
 ```
 
-## Authorize the GAS app and test
+## Authorize the GAS app to use Google APIs
 
 Open the GAS app page and run `doHelp` function manually from the menu `Execute` > `Execute a function` > `doHelp`.
 
-You'll be asked to permit the app to use Google Calendar API and Slack API.
+You'll be asked to permit the app to use Google Calendar API and outgoing hooks.
 
 After authorization, a help text will be posted to your Slack channel.
 
