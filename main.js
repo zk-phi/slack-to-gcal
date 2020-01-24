@@ -156,12 +156,13 @@ function actionConfirmDelete (event, params) {
         private_metadata: event.getId(),
         title: { type: "plain_text", text: "Delete event" },
         submit: { type: "plain_text", text: "Delete" },
-        close: { type: "plain_text", text: "Cancel" },
+        close: { type: "plain_text", text: "Back" },
         blocks:[
             {
                 type: "section",
-                text: { type: "mrkdwn", text: "Really delete event ?" }
-            }
+                text: { type: "mrkdwn", text: "Really delete this event ?" }
+            },
+            formatEvent(event)
         ]
     }, true);
     return ContentService.createTextOutput("");
