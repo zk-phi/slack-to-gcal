@@ -65,6 +65,17 @@ function formatEvent (event, withActions) {
     return block;
 }
 
+Date.prototype.getAPIDate = function () {
+    return this.getYear() + "-" + (this.getMonth() + 1) + "-" + this.getDate();
+};
+
+function parseAPIDate (str) {
+    var res = str.match(/([0-9]+)-([0-9]+)-([0-9]+)/);
+    if (!res) throw "Unexpected date format";
+
+    return new Date(parseInt(res[1]), parseInt(res[2]) - 1, parseInt(res[3]));
+}
+
 function postToSlack (text, blocks) {
     return UrlFetchApp.fetch(properties.getProperty("SLACK_WEBHOOK_URL"), {
         method: 'post',
@@ -128,13 +139,50 @@ function doHelp () {
 function doActionEdit (params) {
     var event = CalendarApp.getEventById(params.actions[0].value);
 
+    var from = event.getStartTime();
+    var to = event.getEndTime();
+    to.setDate(to.getDate() - 1);
+
     openSlackModal(params.trigger_id, {
         type: "modal",
         title: { type: "plain_text", text: "Edit event" },
+        callback_id: "edit",
+        private_metadata: event.getId(),
+        submit: { type: "plain_text", text: "Save" },
+        close: { type: "plain_text", text: "Close" },
         blocks: [
             {
+                type: "input",
+                element: {
+                    type: "plain_text_input",
+                    initial_value: event.getTitle(),
+                    action_id: "title_value"
+                },
+                label: { type: "plain_text", text: "Title" },
+                block_id: "title"
+            }, {
+                type: "input",
+                element: {
+                    type: "datepicker",
+                    initial_date: from.getAPIDate(),
+                    action_id: "from_value"
+                },
+                label: { type: "plain_text", text: "From" },
+                block_id: "from"
+            }, {
+                type: "input",
+                element: {
+                    type: "datepicker",
+                    initial_date: to.getAPIDate(),
+                    action_id: "to_value"
+                },
+                label: { type: "plain_text", text: "From" },
+                block_id: "to"
+            }, {
+                type: "divider"
+            }, {
                 type: "section",
-                text: { type: "mrkdwn", text: "Edit event" },
+                text: { type: "mrkdwn", text: "Delete this event" },
                 accessory: {
                     type: "button",
                     text: { type: "plain_text", text: "Delete" },
@@ -145,6 +193,27 @@ function doActionEdit (params) {
             }
         ]
     });
+
+    return ContentService.createTextOutput("");
+}
+
+function doSubmitEdit (params) {
+    var event = CalendarApp.getEventById(params.view.private_metadata);
+    var title = params.view.state.values.title.title_value.value;
+    var from = parseAPIDate(params.view.state.values.from.from_value.selected_date);
+    var to = parseAPIDate(params.view.state.values.to.to_value.selected_date);
+    to.setDate(to.getDate() + 1);
+
+    event.setTitle(title);
+    var event = event.setAllDayDates(from, to);
+
+    postToSlack("", [
+        {
+            type: "section",
+            text: { type: "mrkdwn", text: ":pencil2: *EVENT UPDATED* :pencil2:" },
+        },
+        formatEvent(event, true)
+    ]);
 
     return ContentService.createTextOutput("");
 }
@@ -205,7 +274,9 @@ function doPost (e) {
                 throw "Unknown action";
             }
         } else if (params.type == 'view_submission') {
-            if (params.view.callback_id == "confirmDelete") {
+            if (params.view.callback_id == "edit") {
+                return doSubmitEdit(params);
+            } else if (params.view.callback_id == "confirmDelete") {
                 return doSubmitDelete(params);
             } else {
                 throw "Unknown view";
