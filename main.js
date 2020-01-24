@@ -134,10 +134,11 @@ function doActionEdit (params) {
         blocks: [
             {
                 type: "section",
-                text: { type: "mrkdwn", text: "Delete event" },
+                text: { type: "mrkdwn", text: "Edit event" },
                 accessory: {
                     type: "button",
                     text: { type: "plain_text", text: "Delete" },
+                    style: "danger",
                     action_id: "confirmDelete",
                     value: event.getId()
                 }
