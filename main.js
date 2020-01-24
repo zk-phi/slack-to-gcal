@@ -131,7 +131,8 @@ function doHelp () {
     return ContentService.createTextOutput("");
 }
 
-function actionEdit (event, params) {
+function doActionEdit (params) {
+    var event = CalendarApp.getEventById(params.actions[0].value);
     openSlackModal(params.trigger_id, {
         type: "modal",
         title: { type: "plain_text", text: "Edit event" },
@@ -151,7 +152,8 @@ function actionEdit (event, params) {
     return ContentService.createTextOutput("");
 }
 
-function actionConfirmDelete (event, params) {
+function doActionConfirmDelete (params) {
+    var event = CalendarApp.getEventById(params.actions[0].value);
     openSlackModal(params.trigger_id, {
         type: "modal",
         callback_id: "confirmDelete",
@@ -170,7 +172,8 @@ function actionConfirmDelete (event, params) {
     return ContentService.createTextOutput("");
 }
 
-function submitDelete (event, params) {
+function doSubmitDelete (params) {
+    var event = CalendarApp.getEventById(params.view.private_metadata);
     postToSlack("", [
         {
             type: "section",
@@ -184,28 +187,6 @@ function submitDelete (event, params) {
     })).setMimeType(ContentService.MimeType.JSON);
 }
 
-function doAction (params) {
-    var event = CalendarApp.getEventById(params.actions[0].value);
-
-    if (params.actions[0].action_id == "edit") {
-        return actionEdit(event, params);
-    } else if (params.actions[0].action_id == "confirmDelete") {
-        return actionConfirmDelete(event, params);
-    } else {
-        throw "Unknown action";
-    }
-}
-
-function doSubmit (params) {
-    var event = CalendarApp.getEventById(params.view.private_metadata);
-
-    if (params.view.callback_id == "confirmDelete") {
-        return submitDelete(event, params);
-    } else {
-        throw "Unknown view";
-    }
-}
-
 function doPost (e) {
     var params = e.parameter.payload ? JSON.parse(e.parameter.payload) : e.parameter;
 
@@ -214,9 +195,19 @@ function doPost (e) {
 
     if (params.type) {
         if (params.type == 'block_actions') {
-            return doAction(params);
+            if (params.actions[0].action_id == "edit") {
+                return doActionEdit(params);
+            } else if (params.actions[0].action_id == "confirmDelete") {
+                return doActionConfirmDelete(params);
+            } else {
+                throw "Unknown action";
+            }
         } else if (params.type == 'view_submission') {
-            return doSubmit(params);
+            if (params.view.callback_id == "confirmDelete") {
+                return doSubmitDelete(params);
+            } else {
+                throw "Unknown view";
+            }
         } else {
             throw "Unknown action type";
         }
