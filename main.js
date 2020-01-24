@@ -70,7 +70,8 @@ function formatEvent (event, withActions) {
         block.accessory = {
             type: "button",
             text: { type: "plain_text", text: ":pencil2:", emoji: true },
-            value: "edit:" + event.getId()
+            action_id: "edit",
+            value: event.getId()
         };
     }
 
@@ -141,7 +142,8 @@ function actionEdit (event, params) {
                 accessory: {
                     type: "button",
                     text: { type: "plain_text", text: "Delete" },
-                    value: "confirmDelete:" + event.getId()
+                    action_id: "confirmDelete",
+                    value: event.getId()
                 }
             }
         ]
@@ -183,14 +185,11 @@ function submitDelete (event, params) {
 }
 
 function doAction (params) {
-    var match = params.actions[0].value.match(/^([^:]+):(.*)$/);
-    if (!match) throw "Parse error";
+    var event = CalendarApp.getEventById(params.actions[0].value);
 
-    var event = CalendarApp.getEventById(match[2]);
-
-    if (match[1] == "edit") {
+    if (params.actions[0].action_id == "edit") {
         return actionEdit(event, params);
-    } else if (match[1] == "confirmDelete") {
+    } else if (params.actions[0].action_id == "confirmDelete") {
         return actionConfirmDelete(event, params);
     } else {
         throw "Unknown action";
