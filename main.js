@@ -4,13 +4,15 @@ var properties = PropertiesService.getScriptProperties();
 
 function parseStr (str) {
     /*                    1      3            4             5                 7              8 */
-    var res = str.match(/^(.*?) (([0-9]{4}\/)?([0-9]{1,2})\/([0-9]{1,2})( ?- ?([0-9]{1,2}))?|(tomorrow))$/i);
+    var res = str.match(/^(.*?) (([0-9]{4}\/)?([0-9]{1,2})\/([0-9]{1,2})( ?- ?([0-9]{1,2}))?|(tomorrow|today))$/i);
     if (!res) throw "Parse error";
 
     var today = new Date();
 
-    var from = res[8] ? (
+    var from = res[8] == "tomorrow" ? (
         new Date(today.getYear(), today.getMonth(), today.getDate() + 1)
+    ) : res[8] == "today" ? (
+        today
     ) : (
         new Date(
             res[3] ? parseInt(res[3]) : today.getYear(),
