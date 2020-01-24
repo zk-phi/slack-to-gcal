@@ -52,7 +52,7 @@ function getEventList () {
     });
 }
 
-function formatEvent (event) {
+function formatEvent (event, withActions) {
     var from = event.getStartTime();
     var to = event.getEndTime();
     to.setDate(to.getDate() - 1);
@@ -61,15 +61,20 @@ function formatEvent (event) {
         from < to ? " ~ " + to.toLocaleDateString() : ""
     ) + " *" + event.getTitle() + "*";
 
-    return {
+    var block = {
         type: "section",
-        text: { type: "mrkdwn", text: text },
-        accessory: {
+        text: { type: "mrkdwn", text: text }
+    };
+
+    if (withActions) {
+        block.accessory = {
             type: "button",
             text: { type: "plain_text", text: ":pencil2:", emoji: true },
             value: "edit:" + event.getId()
-        }
-    };
+        };
+    }
+
+    return block;
 }
 
 /* --- slack utils */
@@ -100,7 +105,7 @@ function doAddEvent (params) {
             type: "section",
             text: { type: "mrkdwn", text: ":white_check_mark: *EVENT ADDED* :white_check_mark:" },
         },
-        formatEvent(res)
+        formatEvent(res, true)
     ]);
     return ContentService.createTextOutput("");
 }
@@ -112,7 +117,7 @@ function doListEvent () {
             type: "section",
             text: { type: "mrkdwn", text: ":calendar: *UPCOMING EVENTS* :calendar:" },
         }
-    ].concat(events.map(formatEvent)));
+    ].concat(events.map(function (x) { return formatEvent(x, true); })));
     return ContentService.createTextOutput("");
 }
 
