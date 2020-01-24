@@ -1,6 +1,6 @@
 # slack-to-gcal
 
-A Slack slash command to create Google Calendar events.
+CRUD Google Calendar events from Slack.
 
 # Setup
 ## Install `clasp`
