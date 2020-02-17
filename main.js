@@ -4,22 +4,35 @@ var properties = PropertiesService.getScriptProperties();
 
 function parseStr (str) {
     /*                    1      3            4              5                 7              8 */
-    var res = str.match(/^(.*?) (([0-9]{4}\/)?([0-9]{1,2}\/)?([0-9]{1,2})( ?- ?([0-9]{1,2}))?|(tomorrow|today))$/i);
+    var res = str.match(/^(.*?) (([0-9]{4}\/)?([0-9]{1,2}\/)?([0-9]{1,2})( ?- ?([0-9]{1,2}))?|(tomorrow|today|mon(day)?|tue(sday)?|wed(nesday)?|thu(rsday)?|fri(day)?|sat(urday)?|sun(day)?))$/i);
     if (!res) throw "Parse error";
 
     var today = new Date();
 
-    var from = res[8] == "tomorrow" ? (
-        new Date(today.getYear(), today.getMonth(), today.getDate() + 1)
-    ) : res[8] == "today" ? (
-        today
-    ) : (
-        new Date(
+    var from;
+    if (res[8]) {
+        res[8] = res[8].toLowerCase();
+        if (res[8] == "tomorrow") {
+            from = new Date(today.getYear(), today.getMonth(), today.getDate() + 1);
+        } else if (res[8] == "today") {
+            from = today;
+        } else {
+            var todayDow = today.getDay();
+            var fromDow = {
+                mon: 1, monday: 1, tue: 2, tuesday: 2,
+                wed: 3, wednesday: 3, thu: 4, thursday: 4,
+                fri: 5, friday: 5, sat: 6, saturday: 6, sun: 0, sunday: 0
+            }[res[8]];
+            var diff = todayDow == fromDow ? 7 : (fromDow - todayDow) % 7;
+            from = new Date(today.getYear(), today.getMonth(), today.getDate() + diff);
+        }
+    } else {
+        today = new Date(
             res[3] ? parseInt(res[3]) : today.getYear(),
             res[4] ? parseInt(res[4]) - 1 : today.getMonth(),
             parseInt(res[5])
-        )
-    );
+        );
+    }
 
     var to = new Date(
         from.getYear(),
