@@ -27,7 +27,7 @@ function parseStr (str) {
             from = new Date(today.getYear(), today.getMonth(), today.getDate() + diff);
         }
     } else {
-        today = new Date(
+        from = new Date(
             res[3] ? parseInt(res[3]) : today.getYear(),
             res[4] ? parseInt(res[4]) - 1 : today.getMonth(),
             parseInt(res[5])
