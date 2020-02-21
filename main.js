@@ -56,14 +56,16 @@ function parseStr (str) {
     return { title: res[1], from: from, to: to };
 }
 
-function formatEvent (event, withActions) {
+function formatEvent (event, deleted, withActions) {
     var from = event.getStartTime();
     var to = event.getEndTime();
     to.setDate(to.getDate() - 1);
 
-    var text = "- " + from.toLocaleDateString() + (
-        from < to ? " ~ " + to.toLocaleDateString() : ""
-    ) + " *" + event.getTitle() + "*";
+    var decoration = deleted ? "~" : "";
+
+    var text = decoration + event.getTitle() + "(" + from.toLocaleDateString() + (
+        from < to ? " - " + to.toLocaleDateString() : ""
+    ) + ")" + decoration;
 
     var block = {
         type: "section",
@@ -82,10 +84,11 @@ function formatEvent (event, withActions) {
     return block;
 }
 
-function formatTask (task, withActions) {
+function formatTask (task, deleted, withActions) {
+    var decoration = deleted ? "~" : "";
     var block = {
         type: "section",
-        text: { type: "mrkdwn", text: "- " + task.title }
+        text: { type: "mrkdwn", text: decoration + task.title + decoration }
     };
 
     if (withActions) {
@@ -173,11 +176,8 @@ function doAddTask (params) {
     var task = createTask(res[1]);
 
     postToSlack("", [
-        {
-            type: "section",
-            text: { type: "mrkdwn", text: ":white_check_mark: *TODO ADDED* :white_check_mark:" },
-        },
-        formatTask(task, true)
+        { type: "divider" },
+        formatTask(task, false, true)
     ]);
 
     return ContentService.createTextOutput("");
@@ -188,11 +188,8 @@ function doAddEvent (params) {
     var event = CalendarApp.getDefaultCalendar().createAllDayEvent(res.title, res.from, res.to);
 
     postToSlack("", [
-        {
-            type: "section",
-            text: { type: "mrkdwn", text: ":white_check_mark: *EVENT ADDED* :white_check_mark:" },
-        },
-        formatEvent(event, true)
+        { type: "divider" },
+        formatEvent(event, false, true)
     ]);
 
     return ContentService.createTextOutput("");
@@ -205,8 +202,9 @@ function doListEventAndTask () {
             {
                 type: "section",
                 text: { type: "mrkdwn", text: ":card_index_dividers: *TODOs* :card_index_dividers:" },
-            }
-        ].concat(tasks.map(function (x) { return formatTask(x, true); })));
+            },
+            { type: "divider" }
+        ].concat(tasks.map(function (x) { return formatTask(x, false, true); })));
     }
 
     var today = new Date();
@@ -218,8 +216,9 @@ function doListEventAndTask () {
         {
             type: "section",
             text: { type: "mrkdwn", text: ":calendar: *UPCOMING EVENTS* :calendar:" },
-        }
-    ].concat(events.map(function (x) { return formatEvent(x, true); })));
+        },
+        { type: "divider" }
+    ].concat(events.map(function (x) { return formatEvent(x, false, true); })));
 
     return ContentService.createTextOutput("");
 }
@@ -341,15 +340,15 @@ function doSubmitEdit (params) {
     var to = parseAPIDate(params.view.state.values.to.to_value.selected_date);
     to.setDate(to.getDate() + 1);
 
+    var oldEvent = formatEvent(event, true, false);
+
     event.setTitle(title);
     var event = event.setAllDayDates(from, to);
 
     postToSlack("", [
-        {
-            type: "section",
-            text: { type: "mrkdwn", text: ":pencil2: *EVENT UPDATED* :pencil2:" },
-        },
-        formatEvent(event, true)
+        { type: "divider" },
+        oldEvent,
+        formatEvent(event, false, true)
     ]);
 
     return ContentService.createTextOutput("");
@@ -357,16 +356,16 @@ function doSubmitEdit (params) {
 
 function doSubmitEditTask (params) {
     var task = getTask(params.view.private_metadata);
-    task.title = params.view.state.values.title.title_value.value;
 
+    var oldTask = formatTask(task, true, false);
+
+    task.title = params.view.state.values.title.title_value.value;
     updateTask(task, task.id);
 
     postToSlack("", [
-        {
-            type: "section",
-            text: { type: "mrkdwn", text: ":pencil2: *TODO UPDATED* :pencil2:" },
-        },
-        formatTask(task, true)
+        { type: "divider" },
+        oldTask,
+        formatTask(task, false, true)
     ]);
 
     return ContentService.createTextOutput("");
@@ -387,7 +386,7 @@ function doActionConfirmDelete (params) {
                 type: "section",
                 text: { type: "mrkdwn", text: "Really delete this event ?" }
             },
-            formatEvent(event)
+            formatEvent(event, false, false)
         ]
     }, true);
 
@@ -409,7 +408,7 @@ function doActionConfirmDeleteTask (params) {
                 type: "section",
                 text: { type: "mrkdwn", text: "Really delete this todo ?" }
             },
-            formatTask(task)
+            formatTask(task, false, false)
         ]
     }, true);
 
@@ -420,11 +419,8 @@ function doSubmitDelete (params) {
     var event = CalendarApp.getEventById(params.view.private_metadata);
 
     postToSlack("", [
-        {
-            type: "section",
-            text: { type: "mrkdwn", text: ":wastebasket: *EVENT DELETED* :wastebasket:" },
-        },
-        formatEvent(event)
+        { type: "divider" },
+        formatEvent(event, true, false)
     ]);
 
     event.deleteEvent();
@@ -438,11 +434,8 @@ function doSubmitDeleteTask (params) {
     var task = getTask(params.view.private_metadata);
 
     postToSlack("", [
-        {
-            type: "section",
-            text: { type: "mrkdwn", text: ":wastebasket: *TODO DELETED* :wastebasket:" },
-        },
-        formatTask(task)
+        { type: "divider" },
+        formatTask(task, true, false)
     ]);
 
     deleteTask(task.id);
