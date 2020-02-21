@@ -82,11 +82,21 @@ function formatEvent (event, withActions) {
     return block;
 }
 
-function formatTask (task) {
+function formatTask (task, withActions) {
     var block = {
         type: "section",
         text: { type: "mrkdwn", text: "- " + task.title }
     };
+
+    if (withActions) {
+        block.accessory = {
+            type: "button",
+            text: { type: "plain_text", text: ":pencil2:", emoji: true },
+            action_id: "edit_task",
+            value: task.id
+        };
+    }
+
     return block;
 }
 
@@ -118,13 +128,25 @@ function getTaskListIdCreate () {
 }
 
 function getTasks () {
-    return Tasks.Tasks.list(getTaskListIdCreate()).items;
+    return Tasks.Tasks.list(getTaskListIdCreate()).items || [];
+}
+
+function getTask (id) {
+    return Tasks.Tasks.get(getTaskListIdCreate(), id);
+}
+
+function deleteTask (id) {
+    return Tasks.Tasks.remove(getTaskListIdCreate(), id);
 }
 
 function createTask (title) {
     var task = Tasks.newTask();
     task.title = title;
     return Tasks.Tasks.insert(task, getTaskListIdCreate());
+}
+
+function updateTask (task, id) {
+    return Tasks.Tasks.patch(task, getTaskListIdCreate(), id);
 }
 
 function postToSlack (text, blocks) {
@@ -274,6 +296,45 @@ function doActionEdit (params) {
     return ContentService.createTextOutput("");
 }
 
+function doActionEditTask (params) {
+    var task = getTask(params.actions[0].value);
+
+    openSlackModal(params.trigger_id, {
+        type: "modal",
+        title: { type: "plain_text", text: "Edit task" },
+        callback_id: "edit_task",
+        private_metadata: task.id,
+        submit: { type: "plain_text", text: "Save" },
+        close: { type: "plain_text", text: "Close" },
+        blocks: [
+            {
+                type: "input",
+                element: {
+                    type: "plain_text_input",
+                    initial_value: task.title,
+                    action_id: "title_value"
+                },
+                label: { type: "plain_text", text: "Title" },
+                block_id: "title"
+            }, {
+                type: "divider"
+            }, {
+                type: "section",
+                text: { type: "mrkdwn", text: "Delete this task" },
+                accessory: {
+                    type: "button",
+                    text: { type: "plain_text", text: "Delete" },
+                    style: "danger",
+                    action_id: "confirmDelete_task",
+                    value: task.id
+                }
+            }
+        ]
+    });
+
+    return ContentService.createTextOutput("");
+}
+
 function doSubmitEdit (params) {
     var event = CalendarApp.getEventById(params.view.private_metadata);
     var title = params.view.state.values.title.title_value.value;
@@ -290,6 +351,23 @@ function doSubmitEdit (params) {
             text: { type: "mrkdwn", text: ":pencil2: *EVENT UPDATED* :pencil2:" },
         },
         formatEvent(event, true)
+    ]);
+
+    return ContentService.createTextOutput("");
+}
+
+function doSubmitEditTask (params) {
+    var task = getTask(params.view.private_metadata);
+    task.title = params.view.state.values.title.title_value.value;
+
+    updateTask(task, task.id);
+
+    postToSlack("", [
+        {
+            type: "section",
+            text: { type: "mrkdwn", text: ":pencil2: *TASK UPDATED* :pencil2:" },
+        },
+        formatTask(task, true)
     ]);
 
     return ContentService.createTextOutput("");
@@ -317,6 +395,28 @@ function doActionConfirmDelete (params) {
     return ContentService.createTextOutput("");
 }
 
+function doActionConfirmDeleteTask (params) {
+    var task = getTask(params.actions[0].value);
+
+    openSlackModal(params.trigger_id, {
+        type: "modal",
+        callback_id: "confirmDelete_task",
+        private_metadata: task.id,
+        title: { type: "plain_text", text: "Delete task" },
+        submit: { type: "plain_text", text: "Delete" },
+        close: { type: "plain_text", text: "Back" },
+        blocks:[
+            {
+                type: "section",
+                text: { type: "mrkdwn", text: "Really delete this task ?" }
+            },
+            formatTask(task)
+        ]
+    }, true);
+
+    return ContentService.createTextOutput("");
+}
+
 function doSubmitDelete (params) {
     var event = CalendarApp.getEventById(params.view.private_metadata);
 
@@ -335,6 +435,24 @@ function doSubmitDelete (params) {
     })).setMimeType(ContentService.MimeType.JSON);
 }
 
+function doSubmitDeleteTask (params) {
+    var task = getTask(params.view.private_metadata);
+
+    postToSlack("", [
+        {
+            type: "section",
+            text: { type: "mrkdwn", text: ":wastebasket: *TASK DELETED* :wastebasket:" },
+        },
+        formatTask(task)
+    ]);
+
+    deleteTask(task.id);
+
+    return ContentService.createTextOutput(JSON.stringify({
+        response_action: "clear"
+    })).setMimeType(ContentService.MimeType.JSON);
+}
+
 function doPost (e) {
     var params = e.parameter.payload ? JSON.parse(e.parameter.payload) : e.parameter;
 
@@ -345,16 +463,24 @@ function doPost (e) {
         if (params.type == 'block_actions') {
             if (params.actions[0].action_id == "edit") {
                 return doActionEdit(params);
+            } else if (params.actions[0].action_id == "edit_task") {
+                return doActionEditTask(params);
             } else if (params.actions[0].action_id == "confirmDelete") {
                 return doActionConfirmDelete(params);
+            } else if (params.actions[0].action_id == "confirmDelete_task") {
+                return doActionConfirmDeleteTask(params);
             } else {
                 throw "Unknown action";
             }
         } else if (params.type == 'view_submission') {
             if (params.view.callback_id == "edit") {
                 return doSubmitEdit(params);
+            } else if (params.view.callback_id == "edit_task") {
+                return doSubmitEditTask(params);
             } else if (params.view.callback_id == "confirmDelete") {
                 return doSubmitDelete(params);
+            } else if (params.view.callback_id == "confirmDelete_task") {
+                return doSubmitDeleteTask(params);
             } else {
                 throw "Unknown view";
             }
