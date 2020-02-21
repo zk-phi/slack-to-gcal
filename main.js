@@ -175,7 +175,7 @@ function doAddTask (params) {
     postToSlack("", [
         {
             type: "section",
-            text: { type: "mrkdwn", text: ":white_check_mark: *TASK ADDED* :white_check_mark:" },
+            text: { type: "mrkdwn", text: ":white_check_mark: *TODO ADDED* :white_check_mark:" },
         },
         formatTask(task, true)
     ]);
@@ -204,7 +204,7 @@ function doListEventAndTask () {
         postToSlack("", [
             {
                 type: "section",
-                text: { type: "mrkdwn", text: ":card_index_dividers: *TASKS* :card_index_dividers:" },
+                text: { type: "mrkdwn", text: ":card_index_dividers: *TODOs* :card_index_dividers:" },
             }
         ].concat(tasks.map(function (x) { return formatTask(x, true); })));
     }
@@ -300,7 +300,7 @@ function doActionEditTask (params) {
 
     openSlackModal(params.trigger_id, {
         type: "modal",
-        title: { type: "plain_text", text: "Edit task" },
+        title: { type: "plain_text", text: "Edit todo" },
         callback_id: "edit_task",
         private_metadata: task.id,
         submit: { type: "plain_text", text: "Save" },
@@ -319,7 +319,7 @@ function doActionEditTask (params) {
                 type: "divider"
             }, {
                 type: "section",
-                text: { type: "mrkdwn", text: "Delete this task" },
+                text: { type: "mrkdwn", text: "Delete this todo" },
                 accessory: {
                     type: "button",
                     text: { type: "plain_text", text: "Delete" },
@@ -364,7 +364,7 @@ function doSubmitEditTask (params) {
     postToSlack("", [
         {
             type: "section",
-            text: { type: "mrkdwn", text: ":pencil2: *TASK UPDATED* :pencil2:" },
+            text: { type: "mrkdwn", text: ":pencil2: *TODO UPDATED* :pencil2:" },
         },
         formatTask(task, true)
     ]);
@@ -401,13 +401,13 @@ function doActionConfirmDeleteTask (params) {
         type: "modal",
         callback_id: "confirmDelete_task",
         private_metadata: task.id,
-        title: { type: "plain_text", text: "Delete task" },
+        title: { type: "plain_text", text: "Delete todo" },
         submit: { type: "plain_text", text: "Delete" },
         close: { type: "plain_text", text: "Back" },
         blocks:[
             {
                 type: "section",
-                text: { type: "mrkdwn", text: "Really delete this task ?" }
+                text: { type: "mrkdwn", text: "Really delete this todo ?" }
             },
             formatTask(task)
         ]
@@ -440,7 +440,7 @@ function doSubmitDeleteTask (params) {
     postToSlack("", [
         {
             type: "section",
-            text: { type: "mrkdwn", text: ":wastebasket: *TASK DELETED* :wastebasket:" },
+            text: { type: "mrkdwn", text: ":wastebasket: *TODO DELETED* :wastebasket:" },
         },
         formatTask(task)
     ]);
