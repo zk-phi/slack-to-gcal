@@ -168,8 +168,9 @@ function openSlackModal (trigger_id, view, push) {
 
 /* --- interface */
 
-function doAddTask (title) {
-    var task = createTask(title);
+function doAddTask (params) {
+    var res = params.text.match(/^todo +(.+)$/);
+    var task = createTask(res[1]);
 
     postToSlack("", [
         {
@@ -182,12 +183,9 @@ function doAddTask (title) {
     return ContentService.createTextOutput("");
 }
 
-function doAddEvent (parsedEvent) {
-    var event = CalendarApp.getDefaultCalendar().createAllDayEvent(
-        parsedEvent.title,
-        parsedEvent.from,
-        parsedEvent.to
-    );
+function doAddEvent (params) {
+    var res = parseStr(params.text);
+    var event = CalendarApp.getDefaultCalendar().createAllDayEvent(res.title, res.from, res.to);
 
     postToSlack("", [
         {
@@ -230,6 +228,7 @@ function doHelp () {
     postToSlack(
         "USAGE\n" +
         "- `/task hogehoge [yyyy/]mm/dd[-dd]` to add events\n" +
+        "- `/task todo hogehoge` to add todos\n" +
         "- `/task list` to see all events"
     );
     return ContentService.createTextOutput("");
@@ -492,13 +491,10 @@ function doPost (e) {
             return doHelp();
         } else if (params.text == 'list') {
             return doListEventAndTask();
+        } else if (params.text.match(/^todo/)) {
+            return doAddTask(params);
         } else {
-            try {
-                var parsedEvent = parseStr(params.text);
-            } catch (e) {
-                return doAddTask(params.text);
-            }
-            return doAddEvent(parsedEvent);
+            return doAddEvent(params);
         }
     }
 
