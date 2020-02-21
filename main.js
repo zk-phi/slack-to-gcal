@@ -1,5 +1,4 @@
 var PROPERTIES = PropertiesService.getScriptProperties();
-var TASK_LIST_NAME = "TODOs";
 
 /* --- utils */
 
@@ -56,53 +55,6 @@ function parseStr (str) {
     return { title: res[1], from: from, to: to };
 }
 
-function formatEvent (event, deleted, withActions) {
-    var from = event.getStartTime();
-    var to = event.getEndTime();
-    to.setDate(to.getDate() - 1);
-
-    var decoration = deleted ? "~" : "";
-
-    var text = decoration + event.getTitle() + "(" + from.toLocaleDateString() + (
-        from < to ? " - " + to.toLocaleDateString() : ""
-    ) + ")" + decoration;
-
-    var block = {
-        type: "section",
-        text: { type: "mrkdwn", text: text }
-    };
-
-    if (withActions) {
-        block.accessory = {
-            type: "button",
-            text: { type: "plain_text", text: ":pencil2:", emoji: true },
-            action_id: "edit",
-            value: event.getId()
-        };
-    }
-
-    return block;
-}
-
-function formatTask (task, deleted, withActions) {
-    var decoration = deleted ? "~" : "";
-    var block = {
-        type: "section",
-        text: { type: "mrkdwn", text: decoration + task.title + decoration }
-    };
-
-    if (withActions) {
-        block.accessory = {
-            type: "button",
-            text: { type: "plain_text", text: ":pencil2:", emoji: true },
-            action_id: "edit_task",
-            value: task.id
-        };
-    }
-
-    return block;
-}
-
 Date.prototype.getAPIDate = function () {
     return this.getYear() + "-" + (this.getMonth() + 1) + "-" + this.getDate();
 };
@@ -114,62 +66,7 @@ function parseAPIDate (str) {
     return new Date(parseInt(res[1]), parseInt(res[2]) - 1, parseInt(res[3]));
 }
 
-function createTaskList (title) {
-    var list = Tasks.newTaskList();
-    list.title = title;
-    return Tasks.Tasklists.insert(list);
-}
-
-function getTaskListIdCreate () {
-    var taskLists = Tasks.Tasklists.list().getItems();
-    for (var i = 0; i < taskLists.length; i++) {
-        if (taskLists[i].title == TASK_LIST_NAME) {
-            return taskLists[i].id;
-        }
-    }
-    return createTaskList(TASK_LIST_NAME).id;
-}
-
-function getTasks () {
-    return Tasks.Tasks.list(getTaskListIdCreate()).items || [];
-}
-
-function getTask (id) {
-    return Tasks.Tasks.get(getTaskListIdCreate(), id);
-}
-
-function deleteTask (id) {
-    return Tasks.Tasks.remove(getTaskListIdCreate(), id);
-}
-
-function createTask (title) {
-    var task = Tasks.newTask();
-    task.title = title;
-    return Tasks.Tasks.insert(task, getTaskListIdCreate());
-}
-
-function updateTask (task, id) {
-    return Tasks.Tasks.patch(task, getTaskListIdCreate(), id);
-}
-
-function postToSlack (text, blocks) {
-    return UrlFetchApp.fetch(PROPERTIES.getProperty("SLACK_WEBHOOK_URL"), {
-        method: 'post',
-        contentType: 'application/json',
-        payload: JSON.stringify({ text: text || "", blocks: blocks || [] })
-    });
-}
-
-function openSlackModal (trigger_id, view, push) {
-    return UrlFetchApp.fetch('https://slack.com/api/views.' + (push ? 'push' : 'open'), {
-        method: 'post',
-        contentType: 'application/json',
-        headers: { Authorization: 'Bearer ' + PROPERTIES.getProperty("SLACK_ACCESS_TOKEN") },
-        payload: JSON.stringify({ trigger_id: trigger_id, view: view })
-    });
-}
-
-/* --- interface */
+/* --- slash commands */
 
 function doAddTask (params) {
     var res = params.text.match(/^todo +(.+)$/);
@@ -232,6 +129,8 @@ function doHelp () {
     );
     return ContentService.createTextOutput("");
 }
+
+/* --- button actions */
 
 function doActionEdit (params) {
     var event = CalendarApp.getEventById(params.actions[0].value);
@@ -333,44 +232,6 @@ function doActionEditTask (params) {
     return ContentService.createTextOutput("");
 }
 
-function doSubmitEdit (params) {
-    var event = CalendarApp.getEventById(params.view.private_metadata);
-    var title = params.view.state.values.title.title_value.value;
-    var from = parseAPIDate(params.view.state.values.from.from_value.selected_date);
-    var to = parseAPIDate(params.view.state.values.to.to_value.selected_date);
-    to.setDate(to.getDate() + 1);
-
-    var oldEvent = formatEvent(event, true, false);
-
-    event.setTitle(title);
-    var event = event.setAllDayDates(from, to);
-
-    postToSlack("", [
-        { type: "divider" },
-        oldEvent,
-        formatEvent(event, false, true)
-    ]);
-
-    return ContentService.createTextOutput("");
-}
-
-function doSubmitEditTask (params) {
-    var task = getTask(params.view.private_metadata);
-
-    var oldTask = formatTask(task, true, false);
-
-    task.title = params.view.state.values.title.title_value.value;
-    updateTask(task, task.id);
-
-    postToSlack("", [
-        { type: "divider" },
-        oldTask,
-        formatTask(task, false, true)
-    ]);
-
-    return ContentService.createTextOutput("");
-}
-
 function doActionConfirmDelete (params) {
     var event = CalendarApp.getEventById(params.actions[0].value);
 
@@ -415,6 +276,46 @@ function doActionConfirmDeleteTask (params) {
     return ContentService.createTextOutput("");
 }
 
+/* --- modal form submissions */
+
+function doSubmitEdit (params) {
+    var event = CalendarApp.getEventById(params.view.private_metadata);
+    var title = params.view.state.values.title.title_value.value;
+    var from = parseAPIDate(params.view.state.values.from.from_value.selected_date);
+    var to = parseAPIDate(params.view.state.values.to.to_value.selected_date);
+    to.setDate(to.getDate() + 1);
+
+    var oldEvent = formatEvent(event, true, false);
+
+    event.setTitle(title);
+    var event = event.setAllDayDates(from, to);
+
+    postToSlack("", [
+        { type: "divider" },
+        oldEvent,
+        formatEvent(event, false, true)
+    ]);
+
+    return ContentService.createTextOutput("");
+}
+
+function doSubmitEditTask (params) {
+    var task = getTask(params.view.private_metadata);
+
+    var oldTask = formatTask(task, true, false);
+
+    task.title = params.view.state.values.title.title_value.value;
+    updateTask(task, task.id);
+
+    postToSlack("", [
+        { type: "divider" },
+        oldTask,
+        formatTask(task, false, true)
+    ]);
+
+    return ContentService.createTextOutput("");
+}
+
 function doSubmitDelete (params) {
     var event = CalendarApp.getEventById(params.view.private_metadata);
 
@@ -444,6 +345,8 @@ function doSubmitDeleteTask (params) {
         response_action: "clear"
     })).setMimeType(ContentService.MimeType.JSON);
 }
+
+/* --- entrypoint */
 
 function doPost (e) {
     var params = e.parameter.payload ? JSON.parse(e.parameter.payload) : e.parameter;
