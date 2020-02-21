@@ -1,4 +1,5 @@
 var PROPERTIES = PropertiesService.getScriptProperties();
+var TASK_LIST_NAME = "TODOs";
 
 /* --- utils */
 
@@ -81,6 +82,14 @@ function formatEvent (event, withActions) {
     return block;
 }
 
+function formatTask (task) {
+    var block = {
+        type: "section",
+        text: { type: "mrkdwn", text: "- " + task.title }
+    };
+    return block;
+}
+
 Date.prototype.getAPIDate = function () {
     return this.getYear() + "-" + (this.getMonth() + 1) + "-" + this.getDate();
 };
@@ -90,6 +99,32 @@ function parseAPIDate (str) {
     if (!res) throw "Unexpected date format";
 
     return new Date(parseInt(res[1]), parseInt(res[2]) - 1, parseInt(res[3]));
+}
+
+function createTaskList (title) {
+    var list = Tasks.newTaskList();
+    list.title = title;
+    return Tasks.Tasklists.insert(list);
+}
+
+function getTaskListIdCreate () {
+    var taskLists = Tasks.Tasklists.list().getItems();
+    for (var i = 0; i < taskLists.length; i++) {
+        if (taskLists[i].title == TASK_LIST_NAME) {
+            return taskLists[i].id;
+        }
+    }
+    return createTaskList(TASK_LIST_NAME).id;
+}
+
+function getTasks () {
+    return Tasks.Tasks.list(getTaskListIdCreate()).items;
+}
+
+function createTask (title) {
+    var task = Tasks.newTask();
+    task.title = title;
+    return Tasks.Tasks.insert(task, getTaskListIdCreate());
 }
 
 function postToSlack (text, blocks) {
@@ -111,9 +146,26 @@ function openSlackModal (trigger_id, view, push) {
 
 /* --- interface */
 
-function doAddEvent (params) {
-    var res = parseStr(params.text);
-    var event = CalendarApp.getDefaultCalendar().createAllDayEvent(res.title, res.from, res.to)
+function doAddTask (title) {
+    var task = createTask(title);
+
+    postToSlack("", [
+        {
+            type: "section",
+            text: { type: "mrkdwn", text: ":white_check_mark: *TASK ADDED* :white_check_mark:" },
+        },
+        formatTask(task, true)
+    ]);
+
+    return ContentService.createTextOutput("");
+}
+
+function doAddEvent (parsedEvent) {
+    var event = CalendarApp.getDefaultCalendar().createAllDayEvent(
+        parsedEvent.title,
+        parsedEvent.from,
+        parsedEvent.to
+    );
 
     postToSlack("", [
         {
@@ -126,13 +178,22 @@ function doAddEvent (params) {
     return ContentService.createTextOutput("");
 }
 
-function doListEvent () {
+function doListEventAndTask () {
+    var tasks = getTasks();
+    if (tasks.length) {
+        postToSlack("", [
+            {
+                type: "section",
+                text: { type: "mrkdwn", text: ":card_index_dividers: *TASKS* :card_index_dividers:" },
+            }
+        ].concat(tasks.map(function (x) { return formatTask(x, true); })));
+    }
+
     var today = new Date();
     var events = CalendarApp.getEvents(
         new Date(today.getYear(), today.getMonth(), today.getDate()),
         new Date('3000/01/01')
     );
-
     postToSlack("", [
         {
             type: "section",
@@ -304,9 +365,14 @@ function doPost (e) {
         if (params.text == '') {
             return doHelp();
         } else if (params.text == 'list') {
-            return doListEvent();
+            return doListEventAndTask();
         } else {
-            return doAddEvent(params);
+            try {
+                var parsedEvent = parseStr(params.text);
+            } catch (e) {
+                return doAddTask(params.text);
+            }
+            return doAddEvent(parsedEvent);
         }
     }
 

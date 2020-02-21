@@ -1,6 +1,11 @@
 {
   "timeZone": "Asia/Tokyo",
   "dependencies": {
+    "enabledAdvancedServices": [{
+      "userSymbol": "Tasks",
+      "serviceId": "tasks",
+      "version": "v1"
+    }]
   },
   "webapp": {
     "access": "ANYONE_ANONYMOUS",
