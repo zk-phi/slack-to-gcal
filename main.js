@@ -1,5 +1,3 @@
-var PROPERTIES = PropertiesService.getScriptProperties();
-
 /* --- utils */
 
 function parseStr (str) {
@@ -352,7 +350,7 @@ function doPost (e) {
     var params = e.parameter.payload ? JSON.parse(e.parameter.payload) : e.parameter;
 
     var verificationToken = params.token;
-    if (verificationToken != PROPERTIES.getProperty("SLACK_VERIFICATION_TOKEN")) throw "Invalid token";
+    if (verificationToken != SLACK_VERIFICATION_TOKEN) throw "Invalid token";
 
     if (params.type) {
         if (params.type == 'block_actions') {

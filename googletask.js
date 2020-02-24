@@ -1,5 +1,3 @@
-var TASK_LIST_NAME = "TODOs";
-
 /* task -> slack block */
 function formatTask (task, deleted, withActions) {
     var decoration = deleted ? "~" : "";
