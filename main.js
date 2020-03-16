@@ -102,18 +102,29 @@ function doListEventAndTask () {
         ].concat(tasks.map(function (x) { return formatTask(x, false, true); })));
     }
 
-    var today = new Date();
+    var now = new Date();
     var events = CalendarApp.getEvents(
-        new Date(today.getYear(), today.getMonth(), today.getDate()),
+        new Date(now.getYear(), now.getMonth(), now.getDate()),
         new Date('3000/01/01')
     );
+
+    var activeEvents = events.filter(function (e) { return e.getStartTime() <= now; });
+    postToSlack("", [
+        {
+            type: "section",
+            text: { type: "mrkdwn", text: ":calendar: *ACTIVE EVENTS* :calendar:" },
+        },
+        { type: "divider" }
+    ].concat(activeEvents.map(function (x) { return formatEvent(x, false, true); })));
+
+    var upcomingEvents = events.filter(function (e) { return e.getStartTime() > now; });
     postToSlack("", [
         {
             type: "section",
             text: { type: "mrkdwn", text: ":calendar: *UPCOMING EVENTS* :calendar:" },
         },
         { type: "divider" }
-    ].concat(events.map(function (x) { return formatEvent(x, false, true); })));
+    ].concat(upcomingEvents.map(function (x) { return formatEvent(x, false, true); })));
 
     return ContentService.createTextOutput("");
 }
