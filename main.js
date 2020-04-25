@@ -21,7 +21,7 @@ function parseStr (str) {
                 wed: 3, wednesday: 3, thu: 4, thursday: 4,
                 fri: 5, friday: 5, sat: 6, saturday: 6, sun: 0, sunday: 0
             }[res[8]];
-            var diff = todayDow == fromDow ? 7 : (fromDow - todayDow) % 7;
+            var diff = (7 + fromDow - todayDow) % 7;
             from = new Date(today.getYear(), today.getMonth(), today.getDate() + diff);
         }
     } else {
