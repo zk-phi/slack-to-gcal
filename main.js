@@ -65,17 +65,22 @@ function parseStr (str) {
         res[7] ? parseInt(res[7]) + 1 : from.getDate() + 1
     );
 
-    if (to < from) {
+    if (to < from) { /* to date is specified but to<from */
         to.setMonth(to.getMonth() + 1);
     }
 
     if (from < now) {
-        if (!res[4] && !res[3]) { /* dd */
-            from.setMonth(from.getMonth() + 1);
-            to.setMonth(to.getMonth() + 1);
-        } else if (!res[3]) { /* MM/dd */
-            from.setYear(from.getYear() + 1);
-            to.setYear(to.getYear() + 1);
+        if (res[5]) { /* date is specified */
+            if (!res[4] && !res[3]) { /* but yyyy/MM is not specified */
+                from.setMonth(from.getMonth() + 1);
+                to.setMonth(to.getMonth() + 1);
+            } else if (!res[3]) { /* but yyyy is not specified */
+                from.setYear(from.getYear() + 1);
+                to.setYear(to.getYear() + 1);
+            }
+        } else if (res[9]) { /* only dow is specified */
+            from.setDate(from.getDate() + 7);
+            to.setDate(to.getDate() + 7);
         }
     }
 
