@@ -18,14 +18,12 @@ function parseStr (str) {
         ) +
         /* or ... */
         "|" + (
-            /* 8: one of ... */
-            "(" + (
-                "tomorrow|today" + /* either "tomorrow", "today" */
-                "|" +
-                "mon(day)?|tue(sday)?|wed(nesday)?" + /* dow */
-                "|" +
-                "thu(rsday)?|fri(day)?|sat(urday)?|sun(day)?"
-            ) + ")"
+            "(tomorrow|today)" /* 8: tomorrow or today */
+        ) +
+        /* or ... */
+        "|" + (
+            /* 9: dow */
+            "(mon(day)?|tue(sday)?|wed(nesday)?|thu(rsday)?|fri(day)?|sat(urday)?|sun(day)?)"
         ) + ")" +
         "$" /* EOL */
     );
@@ -42,16 +40,17 @@ function parseStr (str) {
             from = new Date(now.getYear(), now.getMonth(), now.getDate() + 1);
         } else if (res[8] == "today") {
             from = now;
-        } else {
-            var todayDow = now.getDay();
-            var fromDow = {
-                mon: 1, monday: 1, tue: 2, tuesday: 2,
-                wed: 3, wednesday: 3, thu: 4, thursday: 4,
-                fri: 5, friday: 5, sat: 6, saturday: 6, sun: 0, sunday: 0
-            }[res[8]];
-            var diff = (7 + fromDow - todayDow) % 7;
-            from = new Date(now.getYear(), now.getMonth(), now.getDate() + diff);
         }
+    } else if (res[9]) {
+        res[9] = res[9].toLowerCase();
+        var todayDow = now.getDay();
+        var fromDow = {
+            mon: 1, monday: 1, tue: 2, tuesday: 2,
+            wed: 3, wednesday: 3, thu: 4, thursday: 4,
+            fri: 5, friday: 5, sat: 6, saturday: 6, sun: 0, sunday: 0
+        }[res[9]];
+        var diff = (7 + fromDow - todayDow) % 7;
+        from = new Date(now.getYear(), now.getMonth(), now.getDate() + diff);
     } else {
         from = new Date(
             res[3] ? parseInt(res[3]) : now.getYear(),
