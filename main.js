@@ -1,8 +1,36 @@
 /* --- utils */
 
 function parseStr (str) {
-    /*                    1      3            4              5                 7              8 */
-    var res = str.match(/^(.*?) (([0-9]{4}\/)?([0-9]{1,2}\/)?([0-9]{1,2})( ?- ?([0-9]{1,2}))?|(tomorrow|today|mon(day)?|tue(sday)?|wed(nesday)?|thu(rsday)?|fri(day)?|sat(urday)?|sun(day)?))$/i);
+    const format = (
+        "^" + /* BOL */
+        "(.*?)" + /* 1: any title */
+        " +" + /* delimiter */
+        /* either ... */
+        "(" + (
+            "([0-9]{4}\/)?" + /* 3: optional year yyyy/ */
+            "([0-9]{1,2}\/)?" + /* 4: optional month MM/ */
+            "([0-9]{1,2})" + /* 5: date dd */
+            /* and optional ... */
+            "(" + (
+                " ?- ?" + /* delimiter */
+                "([0-9]{1,2})" /* 7: end-date dd */
+            ) + ")?"
+        ) +
+        /* or ... */
+        "|" + (
+            /* 8: one of ... */
+            "(" + (
+                "tomorrow|today" + /* either "tomorrow", "today" */
+                "|" +
+                "mon(day)?|tue(sday)?|wed(nesday)?" + /* dow */
+                "|" +
+                "thu(rsday)?|fri(day)?|sat(urday)?|sun(day)?"
+            ) + ")"
+        ) + ")" +
+        "$" /* EOL */
+    );
+
+    var res = str.match(new RegExp(format, "i"));
     if (!res) throw "Parse error";
 
     var today = new Date();
