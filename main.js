@@ -35,11 +35,12 @@ function parseStr (str) {
 
     var from;
     if (res[8]) {
+        var beforeEOD = now.getHours() < END_OF_DATE_TIME;
         res[8] = res[8].toLowerCase();
         if (res[8] == "tomorrow") {
-            from = new Date(now.getYear(), now.getMonth(), now.getDate() + 1);
+            from = new Date(now.getYear(), now.getMonth(), now.getDate() + (beforeEOD ? 0 : 1));
         } else if (res[8] == "today") {
-            from = now;
+            from = new Date(now.getYear(), now.getMonth(), now.getDate() + (beforeEOD ? -1 : 0));
         }
     } else if (res[9]) {
         res[9] = res[9].toLowerCase();
