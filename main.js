@@ -33,29 +33,29 @@ function parseStr (str) {
     var res = str.match(new RegExp(format, "i"));
     if (!res) throw "Parse error";
 
-    var today = new Date();
+    var now = new Date();
 
     var from;
     if (res[8]) {
         res[8] = res[8].toLowerCase();
         if (res[8] == "tomorrow") {
-            from = new Date(today.getYear(), today.getMonth(), today.getDate() + 1);
+            from = new Date(now.getYear(), now.getMonth(), now.getDate() + 1);
         } else if (res[8] == "today") {
-            from = today;
+            from = now;
         } else {
-            var todayDow = today.getDay();
+            var todayDow = now.getDay();
             var fromDow = {
                 mon: 1, monday: 1, tue: 2, tuesday: 2,
                 wed: 3, wednesday: 3, thu: 4, thursday: 4,
                 fri: 5, friday: 5, sat: 6, saturday: 6, sun: 0, sunday: 0
             }[res[8]];
             var diff = (7 + fromDow - todayDow) % 7;
-            from = new Date(today.getYear(), today.getMonth(), today.getDate() + diff);
+            from = new Date(now.getYear(), now.getMonth(), now.getDate() + diff);
         }
     } else {
         from = new Date(
-            res[3] ? parseInt(res[3]) : today.getYear(),
-            res[4] ? parseInt(res[4]) - 1 : today.getMonth(),
+            res[3] ? parseInt(res[3]) : now.getYear(),
+            res[4] ? parseInt(res[4]) - 1 : now.getMonth(),
             parseInt(res[5])
         );
     }
@@ -70,12 +70,14 @@ function parseStr (str) {
         to.setMonth(to.getMonth() + 1);
     }
 
-    if (!res[4] && !res[3] && from < today) { /* dd */
-        from.setMonth(from.getMonth() + 1);
-        to.setMonth(to.getMonth() + 1);
-    } else if (!res[3] && from < today) { /* MM/dd */
-        from.setYear(from.getYear() + 1);
-        to.setYear(to.getYear() + 1);
+    if (from < now) {
+        if (!res[4] && !res[3]) { /* dd */
+            from.setMonth(from.getMonth() + 1);
+            to.setMonth(to.getMonth() + 1);
+        } else if (!res[3]) { /* MM/dd */
+            from.setYear(from.getYear() + 1);
+            to.setYear(to.getYear() + 1);
+        }
     }
 
     return { title: res[1], from: from, to: to };
