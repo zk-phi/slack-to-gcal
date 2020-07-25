@@ -29,7 +29,7 @@ function parseStr (str) {
     );
 
     var res = str.match(new RegExp(format, "i"));
-    if (!res) throw "Parse error";
+    if (!res) return null;
 
     var now = new Date();
 
@@ -114,6 +114,20 @@ function doAddTask (params) {
 
 function doAddEvent (params) {
     var res = parseStr(params.text);
+
+    if (!res) {
+        postToSlack(
+            "Parse error: `/task " + params.text + "`\n" +
+            "Sample inputs:\n" +
+            "- `/task todo foobar`\n" +
+            "- `/task foobar monday`\n" +
+            "- `/task foobar tomorrow`\n" +
+            "- `/task foobar 12/31`\n" +
+            "- `/task foobar 12/31-1`"
+        );
+        return ContentService.createTextOutput("");
+    }
+
     var event = CalendarApp.getDefaultCalendar().createAllDayEvent(res.title, res.from, res.to);
 
     postToSlack("", [
