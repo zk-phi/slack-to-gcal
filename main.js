@@ -1,30 +1,74 @@
 /* --- utils */
 
+/* (str, str, str, str, str) -> { obj: Date, unit: str } */
+function _makeDateObjFromMatch (now, y, m, d, relative, dow) {
+    if (relative) {
+        var beforeEOD = now.getHours() < END_OF_DATE_TIME;
+        if (relative == "tomorrow") {
+            return {
+                obj: new Date(now.getFullYear(), now.getMonth(), now.getDate() + (beforeEOD ? 0 : 1)),
+                unit: null
+            };
+        } else if (relative == "today") {
+            return {
+                obj: new Date(now.getFullYear(), now.getMonth(), now.getDate() + (beforeEOD ? -1 : 0)),
+                unit: null
+            };
+        }
+    }
+
+    if (dow) {
+        var todayDow = now.getDay();
+        var fromDow = {
+            mon: 1, monday: 1, tue: 2, tuesday: 2,
+            wed: 3, wednesday: 3, thu: 4, thursday: 4,
+            fri: 5, friday: 5, sat: 6, saturday: 6, sun: 0, sunday: 0
+        }[dow];
+        var diff = (7 + fromDow - todayDow) % 7;
+        return {
+            obj: new Date(now.getFullYear(), now.getMonth(), now.getDate() + diff),
+            unit: "week"
+        };
+    }
+
+    return {
+        obj: new Date(
+            y ? parseInt(y) : now.getFullYear(),
+            m ? parseInt(m) - 1 : now.getMonth(),
+            d ? parseInt(d) : now.getDate()
+        ),
+        unit: !m ? "month" : !y ? "year" : null
+    };
+}
+
 function parseStr (str) {
     const format = (
         "^" + /* BOL */
         "(.*?)" + /* 1: any title */
         " +" + /* delimiter */
         /* either ... */
-        "(" + (
-            "([0-9]{4}\/)?" + /* 3: optional year yyyy/ */
-            "([0-9]{1,2}\/)?" + /* 4: optional month MM/ */
-            "([0-9]{1,2})" + /* 5: date dd */
-            /* and optional ... */
-            "(" + (
-                " ?- ?" + /* delimiter */
-                "([0-9]{1,2})" /* 7: end-date dd */
-            ) + ")?"
-        ) +
-        /* or ... */
-        "|" + (
-            "(tomorrow|today)" /* 8: tomorrow or today */
-        ) +
-        /* or ... */
-        "|" + (
-            /* 9: dow */
-            "(mon(day)?|tue(sday)?|wed(nesday)?|thu(rsday)?|fri(day)?|sat(urday)?|sun(day)?)"
+        "(?:" + (
+            /* specific date (2:optional yyyy)(3:optional month MM)(4:date dd) */
+            "([0-9]{4}\/)?([0-9]{1,2}\/)?([0-9]{1,2})" +
+            /* or 5: tomorrow or today */
+            "|(tomorrow|today)" +
+            /* or 6: a dow */
+            "|(mon(?:day)?|tue(?:sday)?|wed(?:nesday)?|thu(?:rsday)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?)"
         ) + ")" +
+        /* 7: and optional ... */
+        "(" + (
+            /* delimiter and */
+            " ?- ?" +
+            /* either ... */
+            "(?:" + (
+                /* specific date (8:optional yyyy)(9:optional month MM)(10:date dd) */
+                "([0-9]{4}\/)?([0-9]{1,2}\/)?([0-9]{1,2})" +
+                /* or 11: tomorrow or today */
+                "|(tomorrow|today)" +
+                /* or 12: a dow */
+                "|(mon(?:day)?|tue(?:sday)?|wed(?:nesday)?|thu(?:rsday)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?)"
+            ) + ")"
+        ) + ")?" +
         "$" /* EOL */
     );
 
@@ -33,63 +77,52 @@ function parseStr (str) {
 
     var now = new Date();
 
-    var from;
-    if (res[8]) {
-        var beforeEOD = now.getHours() < END_OF_DATE_TIME;
-        res[8] = res[8].toLowerCase();
-        if (res[8] == "tomorrow") {
-            from = new Date(now.getYear(), now.getMonth(), now.getDate() + (beforeEOD ? 0 : 1));
-        } else if (res[8] == "today") {
-            from = new Date(now.getYear(), now.getMonth(), now.getDate() + (beforeEOD ? -1 : 0));
-        }
-    } else if (res[9]) {
-        res[9] = res[9].toLowerCase();
-        var todayDow = now.getDay();
-        var fromDow = {
-            mon: 1, monday: 1, tue: 2, tuesday: 2,
-            wed: 3, wednesday: 3, thu: 4, thursday: 4,
-            fri: 5, friday: 5, sat: 6, saturday: 6, sun: 0, sunday: 0
-        }[res[9]];
-        var diff = (7 + fromDow - todayDow) % 7;
-        from = new Date(now.getYear(), now.getMonth(), now.getDate() + diff);
-    } else {
-        from = new Date(
-            res[3] ? parseInt(res[3]) : now.getYear(),
-            res[4] ? parseInt(res[4]) - 1 : now.getMonth(),
-            parseInt(res[5])
-        );
-    }
-
-    var to = new Date(
-        from.getYear(),
-        from.getMonth(),
-        res[7] ? parseInt(res[7]) + 1 : from.getDate() + 1
+    var from = _makeDateObjFromMatch(
+        now, res[2], res[3], res[4],
+        res[5] ? res[5].toLowerCase() : "",
+        res[6] ? res[6].toLowerCase() : ""
     );
-
-    if (to < from) { /* to date is specified but to<from */
-        to.setMonth(to.getMonth() + 1);
-    }
-
-    if (from < now) {
-        if (res[5]) { /* date is specified */
-            if (!res[4] && !res[3]) { /* but yyyy/MM is not specified */
-                from.setMonth(from.getMonth() + 1);
-                to.setMonth(to.getMonth() + 1);
-            } else if (!res[3]) { /* but yyyy is not specified */
-                from.setYear(from.getYear() + 1);
-                to.setYear(to.getYear() + 1);
-            }
-        } else if (res[9]) { /* only dow is specified */
-            from.setDate(from.getDate() + 7);
-            to.setDate(to.getDate() + 7);
+    if (from.obj < now && from.unit) {
+        switch (from.unit) {
+            case "week":
+                from.obj.setDate(from.obj.getDate() + 7);
+                break;
+            case "month":
+                from.obj.setMonth(from.obj.getMonth() + 1);
+                break;
+            case "year":
+                from.obj.setFullYear(from.obj.getFullYear() + 1);
+                break;
         }
     }
 
-    return { title: res[1], from: from, to: to };
+    var to = _makeDateObjFromMatch(
+        now, res[8], res[9], res[10],
+        res[11] ? res[11].toLowerCase() : "",
+        res[12] ? res[12].toLowerCase() : ""
+    );
+    to.obj.setDate(to.obj.getDate() + 1);
+    if (to.unit) {
+        while (to.obj < from.obj) {
+            switch (to.unit) {
+                case "week":
+                    to.obj.setDate(to.obj.getDate() + 7);
+                    break;
+                case "month":
+                    to.obj.setMonth(to.obj.getMonth() + 1);
+                    break;
+                case "year":
+                    to.obj.setFullYear(to.obj.getFullYear() + 1);
+                    break;
+            }
+        }
+    }
+
+    return { title: res[1], from: from.obj, to: to.obj };
 }
 
 Date.prototype.getAPIDate = function () {
-    return this.getYear() + "-" + (this.getMonth() + 1) + "-" + this.getDate();
+    return this.getFullYear() + "-" + (this.getMonth() + 1) + "-" + this.getDate();
 };
 
 function parseAPIDate (str) {
@@ -153,7 +186,7 @@ function doListEventAndTask () {
 
     var now = new Date();
     var events = CalendarApp.getEvents(
-        new Date(now.getYear(), now.getMonth(), now.getDate()),
+        new Date(now.getFullYear(), now.getMonth(), now.getDate()),
         new Date('3000/01/01')
     );
 
