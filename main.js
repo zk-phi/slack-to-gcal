@@ -230,7 +230,7 @@ function doActionEdit (params) {
                     initial_date: to.getAPIDate(),
                     action_id: "to_value"
                 },
-                label: { type: "plain_text", text: "From" },
+                label: { type: "plain_text", text: "To" },
                 block_id: "to"
             }, {
                 type: "divider"
