@@ -25,7 +25,7 @@ function _makeDateObjFromMatch (base, y, m, d, relative, dow) {
             wed: 3, wednesday: 3, thu: 4, thursday: 4,
             fri: 5, friday: 5, sat: 6, saturday: 6, sun: 0, sunday: 0
         }[dow];
-        var diff = (7 + fromDow - todayDow) % 7;
+        var diff = (7 + fromDow - todayDow) % 7 || 7;
         return {
             obj: new Date(base.getFullYear(), base.getMonth(), base.getDate() + diff),
             unit: "week"
