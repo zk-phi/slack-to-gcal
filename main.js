@@ -1,8 +1,9 @@
 /* --- utils */
 
 /* (str, str, str, str, str) -> { obj: Date, unit: str } */
-function _makeDateObjFromMatch (now, y, m, d, relative, dow) {
+function _makeDateObjFromMatch (base, y, m, d, relative, dow) {
     if (relative) {
+        const now = new Date();
         var beforeEOD = now.getHours() < END_OF_DATE_TIME;
         if (relative == "tomorrow") {
             return {
@@ -18,7 +19,7 @@ function _makeDateObjFromMatch (now, y, m, d, relative, dow) {
     }
 
     if (dow) {
-        var todayDow = now.getDay();
+        var todayDow = base.getDay();
         var fromDow = {
             mon: 1, monday: 1, tue: 2, tuesday: 2,
             wed: 3, wednesday: 3, thu: 4, thursday: 4,
@@ -26,16 +27,16 @@ function _makeDateObjFromMatch (now, y, m, d, relative, dow) {
         }[dow];
         var diff = (7 + fromDow - todayDow) % 7;
         return {
-            obj: new Date(now.getFullYear(), now.getMonth(), now.getDate() + diff),
+            obj: new Date(base.getFullYear(), base.getMonth(), base.getDate() + diff),
             unit: "week"
         };
     }
 
     return {
         obj: new Date(
-            y ? parseInt(y) : now.getFullYear(),
-            m ? parseInt(m) - 1 : now.getMonth(),
-            d ? parseInt(d) : now.getDate()
+            y ? parseInt(y) : base.getFullYear(),
+            m ? parseInt(m) - 1 : base.getMonth(),
+            d ? parseInt(d) : base.getDate()
         ),
         unit: !m ? "month" : !y ? "year" : null
     };
@@ -97,7 +98,7 @@ function parseStr (str) {
     }
 
     var to = _makeDateObjFromMatch(
-        now, res[8], res[9], res[10],
+        from.obj, res[8], res[9], res[10],
         res[11] ? res[11].toLowerCase() : "",
         res[12] ? res[12].toLowerCase() : ""
     );
