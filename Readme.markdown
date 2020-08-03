@@ -46,7 +46,7 @@ In the GAS app page, click `Publish` > `Deploy as web app` and you'll see the UR
 
 Open the Slack API page (https://api.slack.com/) and click `Your Apps` then `Create New App`.
 
-### Authorize the GAS app to use the Slack APIs
+### Authorize the GAS app to use Slack APIs
 
 In your Slack app page,
 
@@ -68,7 +68,7 @@ In your Slack app page,
 - open `Slash Commands` tab and turn on the feature, then click `Create New Command`
   - copy-and-paste the GAS app's public URL to the `Request URL` field
 
-- open `Interactive Components` tab and turn on the feature, then copy-and-paste to the `Request URL` field again
+- open `Interactivity` tab and turn on the feature, then copy-and-paste to the `Request URL` field again
 
 - open `Basic Information` tab and copy the `Verification Token` in `App Credentials` section
 
@@ -98,7 +98,7 @@ Value: <the Slack webhook URL created in the Slack app page>
 
 ## Authorize the GAS app to use Google APIs
 
-Open the GAS app page and run `doHelp` function manually from the menu `Execute` > `Execute a function` > `doHelp`.
+Open `main.gs` in the GAS app page and run `doHelp` function manually from the menu `Execute` > `Execute a function` > `doHelp`.
 
 You'll be asked to permit the app to use Google Calendar API, Tasks API and outgoing hooks.
 
