@@ -1,20 +1,14 @@
 /* --- utils */
 
 /* (str, str, str, str, str) -> { obj: Date, unit: str } */
-function _makeDateObjFromMatch (base, y, m, d, relative, dow) {
-    if (relative) {
+function _makeDateObjFromMatch (base, y, m, d, absolute, dow) {
+    if (absolute) {
         const now = new Date();
         var beforeEOD = now.getHours() < END_OF_DATE_TIME;
-        if (relative == "tomorrow") {
-            return {
-                obj: new Date(now.getFullYear(), now.getMonth(), now.getDate() + (beforeEOD ? 0 : 1)),
-                unit: null
-            };
-        } else if (relative == "today") {
-            return {
-                obj: new Date(now.getFullYear(), now.getMonth(), now.getDate() + (beforeEOD ? -1 : 0)),
-                unit: null
-            };
+        if (absolute == "tomorrow") {
+            return new Date(now.getFullYear(), now.getMonth(), now.getDate() + (beforeEOD ? 0 : 1));
+        } else if (absolute == "today") {
+            return new Date(now.getFullYear(), now.getMonth(), now.getDate() + (beforeEOD ? -1 : 0));
         }
     }
 
@@ -26,20 +20,24 @@ function _makeDateObjFromMatch (base, y, m, d, relative, dow) {
             fri: 5, friday: 5, sat: 6, saturday: 6, sun: 0, sunday: 0
         }[dow];
         var diff = (7 + fromDow - todayDow) % 7 || 7;
-        return {
-            obj: new Date(base.getFullYear(), base.getMonth(), base.getDate() + diff),
-            unit: "week"
-        };
+        return new Date(base.getFullYear(), base.getMonth(), base.getDate() + diff);
     }
 
-    return {
-        obj: new Date(
-            y ? parseInt(y) : base.getFullYear(),
-            m ? parseInt(m) - 1 : base.getMonth(),
-            d ? parseInt(d) : base.getDate()
-        ),
-        unit: !m ? "month" : !y ? "year" : null
-    };
+    var date = new Date(
+        y ? parseInt(y) : base.getFullYear(),
+        m ? parseInt(m) - 1 : base.getMonth(),
+        d ? parseInt(d) : base.getDate()
+    );
+
+    if (date <= base) {
+        if (!m) { /* month is not specified (only date is specified) */
+            date.setMonth(date.getMonth() + 1);
+        } else if (!y) { /* year is not specified */
+            date.setFullYear(date.getFullYear() + 1);
+        }
+    }
+
+    return date;
 }
 
 function parseStr (str) {
@@ -83,43 +81,15 @@ function parseStr (str) {
         res[5] ? res[5].toLowerCase() : "",
         res[6] ? res[6].toLowerCase() : ""
     );
-    if (from.obj < now && from.unit) {
-        switch (from.unit) {
-            case "week":
-                from.obj.setDate(from.obj.getDate() + 7);
-                break;
-            case "month":
-                from.obj.setMonth(from.obj.getMonth() + 1);
-                break;
-            case "year":
-                from.obj.setFullYear(from.obj.getFullYear() + 1);
-                break;
-        }
-    }
 
     var to = _makeDateObjFromMatch(
-        from.obj, res[8], res[9], res[10],
+        from, res[8], res[9], res[10],
         res[11] ? res[11].toLowerCase() : "",
         res[12] ? res[12].toLowerCase() : ""
     );
-    to.obj.setDate(to.obj.getDate() + 1);
-    if (to.unit) {
-        while (to.obj < from.obj) {
-            switch (to.unit) {
-                case "week":
-                    to.obj.setDate(to.obj.getDate() + 7);
-                    break;
-                case "month":
-                    to.obj.setMonth(to.obj.getMonth() + 1);
-                    break;
-                case "year":
-                    to.obj.setFullYear(to.obj.getFullYear() + 1);
-                    break;
-            }
-        }
-    }
+    to.setDate(to.getDate() + 1);
 
-    return { title: res[1], from: from.obj, to: to.obj };
+    return { title: res[1], from: from, to: to };
 }
 
 Date.prototype.getAPIDate = function () {
