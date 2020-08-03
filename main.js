@@ -474,7 +474,7 @@ function doPost (e) {
         } else {
             throw "Unknown action type";
         }
-    } else {
+    } else { /* slash command */
         if (params.text == '') {
             return doHelp();
         } else if (params.text == 'list') {
