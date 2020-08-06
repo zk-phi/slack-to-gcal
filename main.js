@@ -23,21 +23,23 @@ function _makeDateObjFromMatch (base, y, m, d, absolute, dow) {
         return new Date(base.getFullYear(), base.getMonth(), base.getDate() + diff);
     }
 
-    var date = new Date(
-        y ? parseInt(y) : base.getFullYear(),
-        m ? parseInt(m) - 1 : base.getMonth(),
-        d ? parseInt(d) : base.getDate()
-    );
-
-    if (date <= base) {
-        if (!m) { /* month is not specified (only date is specified) */
-            date.setMonth(date.getMonth() + 1);
-        } else if (!y) { /* year is not specified */
-            date.setFullYear(date.getFullYear() + 1);
+    if (d) {
+        var date = new Date(
+            y ? parseInt(y) : base.getFullYear(),
+            m ? parseInt(m) - 1 : base.getMonth(),
+            parseInt(d)
+        );
+        if (date <= base) {
+            if (!m) { /* month is not specified (only date is specified) */
+                date.setMonth(date.getMonth() + 1);
+            } else if (!y) { /* year is not specified */
+                date.setFullYear(date.getFullYear() + 1);
+            }
         }
+        return date;
     }
 
-    return date;
+    return new Date(base.getFullYear(), base.getMonth(), base.getDate());
 }
 
 function parseStr (str) {
