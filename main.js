@@ -360,7 +360,7 @@ function doSubmitEdit (params) {
     event.setTitle(title);
     var event = event.setAllDayDates(from, to);
 
-    postToSlack("", [
+    postToSlack([
         { type: "divider" },
         oldEvent,
         formatEvent(event, false, true)
@@ -377,7 +377,7 @@ function doSubmitEditTask (params) {
     task.title = params.view.state.values.title.title_value.value;
     updateTask(task, task.id);
 
-    postToSlack("", [
+    postToSlack([
         { type: "divider" },
         oldTask,
         formatTask(task, false, true)
@@ -389,7 +389,7 @@ function doSubmitEditTask (params) {
 function doSubmitDelete (params) {
     var event = CalendarApp.getEventById(params.view.private_metadata);
 
-    postToSlack("", [
+    postToSlack([
         { type: "divider" },
         formatEvent(event, true, false)
     ]);
@@ -404,7 +404,7 @@ function doSubmitDelete (params) {
 function doSubmitDeleteTask (params) {
     var task = getTask(params.view.private_metadata);
 
-    postToSlack("", [
+    postToSlack([
         { type: "divider" },
         formatTask(task, true, false)
     ]);
