@@ -111,19 +111,17 @@ function doAddTask (params) {
     var res = params.text.match(/^todo +(.+)$/);
     var task = createTask(res[1]);
 
-    postToSlack("", [
+    return responseToSlack([
         { type: "divider" },
         formatTask(task, false, true)
     ]);
-
-    return ContentService.createTextOutput("");
 }
 
 function doAddEvent (params) {
     var res = parseStr(params.text);
 
     if (!res) {
-        postToSlack(
+        return responseToSlack(
             "Parse error: `/task " + params.text + "`\n" +
             "Sample inputs:\n" +
             "- `/task todo foobar`\n" +
@@ -132,29 +130,30 @@ function doAddEvent (params) {
             "- `/task foobar 12/31`\n" +
             "- `/task foobar 12/31-1`"
         );
-        return ContentService.createTextOutput("");
     }
 
     var event = CalendarApp.getDefaultCalendar().createAllDayEvent(res.title, res.from, res.to);
 
-    postToSlack("", [
+    return responseToSlack([
         { type: "divider" },
         formatEvent(event, false, true)
     ]);
-
-    return ContentService.createTextOutput("");
 }
 
 function doListEventAndTask () {
+    var blocks = [];
+
     var tasks = getTasks();
     if (tasks.length) {
-        postToSlack("", [
+        Array.prototype.push.apply(blocks, [
             {
                 type: "section",
                 text: { type: "mrkdwn", text: ":card_index_dividers: *TODOs* :card_index_dividers:" },
             },
             { type: "divider" }
-        ].concat(tasks.map(function (x) { return formatTask(x, false, true); })));
+        ].concat(
+            tasks.map(function (x) { return formatTask(x, false, true); })
+        ));
     }
 
     var now = new Date();
@@ -164,34 +163,41 @@ function doListEventAndTask () {
     );
 
     var activeEvents = events.filter(function (e) { return e.getStartTime() <= now; });
-    postToSlack("", [
-        {
-            type: "section",
-            text: { type: "mrkdwn", text: ":calendar: *ACTIVE EVENTS* :calendar:" },
-        },
-        { type: "divider" }
-    ].concat(activeEvents.map(function (x) { return formatEvent(x, false, true); })));
+    if (activeEvents.length) {
+        Array.prototype.push.apply(blocks, [
+            {
+                type: "section",
+                text: { type: "mrkdwn", text: ":calendar: *ACTIVE EVENTS* :calendar:" },
+            },
+            { type: "divider" }
+        ].concat(
+            activeEvents.map(function (x) { return formatEvent(x, false, true); })
+        ));
+    }
 
     var upcomingEvents = events.filter(function (e) { return e.getStartTime() > now; });
-    postToSlack("", [
-        {
-            type: "section",
-            text: { type: "mrkdwn", text: ":calendar: *UPCOMING EVENTS* :calendar:" },
-        },
-        { type: "divider" }
-    ].concat(upcomingEvents.map(function (x) { return formatEvent(x, false, true); })));
+    if (upcomingEvents.length) {
+        Array.prototype.push.apply(blocks, [
+            {
+                type: "section",
+                text: { type: "mrkdwn", text: ":calendar: *UPCOMING EVENTS* :calendar:" },
+            },
+            { type: "divider" }
+        ].concat(
+            upcomingEvents.map(function (x) { return formatEvent(x, false, true); })
+        ));
+    }
 
-    return ContentService.createTextOutput("");
+    return responseToSlack(blocks);
 }
 
 function doHelp () {
-    postToSlack(
+    return responseToSlack(
         "USAGE\n" +
         "- `/task hogehoge [yyyy/]mm/dd[-dd]` to add events\n" +
         "- `/task todo hogehoge` to add todos\n" +
         "- `/task list` to see all events"
     );
-    return ContentService.createTextOutput("");
 }
 
 /* --- button actions */
