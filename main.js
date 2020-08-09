@@ -111,10 +111,12 @@ function doAddTask (params) {
     var res = params.text.match(/^todo +(.+)$/);
     var task = createTask(res[1]);
 
-    return responseToSlack([
+    postToSlack([
         { type: "divider" },
         formatTask(task, false, true)
     ]);
+
+    return ContentService.createTextOutput("");
 }
 
 function doAddEvent (params) {
@@ -134,10 +136,12 @@ function doAddEvent (params) {
 
     var event = CalendarApp.getDefaultCalendar().createAllDayEvent(res.title, res.from, res.to);
 
-    return responseToSlack([
+    postToSlack([
         { type: "divider" },
         formatEvent(event, false, true)
     ]);
+
+    return ContentService.createTextOutput("");
 }
 
 function doListEventAndTask () {
