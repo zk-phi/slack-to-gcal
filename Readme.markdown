@@ -61,14 +61,11 @@ Key: SLACK_ACCESS_TOKEN
 Value: <the Slack OAuth Access Token>
 ```
 
-### Add a slash command to the Slack app and enable interaction with the GAS app
+### Enable interaction with the GAS app
 
 In your Slack app page,
 
-- open `Slash Commands` tab and turn on the feature, then click `Create New Command`
-  - copy-and-paste the GAS app's public URL to the `Request URL` field
-
-- open `Interactivity` tab and turn on the feature, then copy-and-paste to the `Request URL` field again
+- open `Interactivity & Shortcuts` tab and turn on the feature, then copy-and-paste the GAS app's public URL to the `Request URL` field
 
 - open `Basic Information` tab and copy the `Verification Token` in `App Credentials` section
 
@@ -80,6 +77,14 @@ In your GAS app page,
 Key: SLACK_VERIFICATION_TOKEN
 Value: <the Slack Verification Token>
 ```
+
+### Add a slash command or a shortcut to the Slack app
+
+In your Slack app page, either (or both):
+
+- open `Slash Commands` tab and turn on the feature, then create a new command and copy-and-paste the GAS app's public URL to the `Request URL` field
+
+- open `Interactivity & Shortcuts` tab and create two new shortcuts with callback id `add` and `add_task` respectively
 
 ### Add an incoming webhook to the Slack app
 
