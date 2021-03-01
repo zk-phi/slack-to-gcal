@@ -350,7 +350,99 @@ function doActionConfirmDeleteTask (params) {
     return ContentService.createTextOutput("");
 }
 
+/* --- shortcut actions */
+
+function doActionAdd (params) {
+    openSlackModal(params.trigger_id, {
+        type: "modal",
+        title: { type: "plain_text", text: "Add event" },
+        callback_id: "add",
+        submit: { type: "plain_text", text: "Save" },
+        close: { type: "plain_text", text: "Close" },
+        blocks: [
+            {
+                type: "input",
+                element: {
+                    type: "plain_text_input",
+                    action_id: "title_value"
+                },
+                label: { type: "plain_text", text: "Title" },
+                block_id: "title"
+            }, {
+                type: "input",
+                element: {
+                    type: "datepicker",
+                    action_id: "from_value"
+                },
+                label: { type: "plain_text", text: "From" },
+                block_id: "from"
+            }, {
+                type: "input",
+                element: {
+                    type: "datepicker",
+                    action_id: "to_value"
+                },
+                label: { type: "plain_text", text: "To" },
+                block_id: "to"
+            }
+        ]
+    });
+
+    return ContentService.createTextOutput("");
+}
+
+function doActionAddTask (params) {
+    openSlackModal(params.trigger_id, {
+        type: "modal",
+        title: { type: "plain_text", text: "Add todo" },
+        callback_id: "add_task",
+        submit: { type: "plain_text", text: "Save" },
+        close: { type: "plain_text", text: "Close" },
+        blocks: [
+            {
+                type: "input",
+                element: {
+                    type: "plain_text_input",
+                    action_id: "title_value"
+                },
+                label: { type: "plain_text", text: "Title" },
+                block_id: "title"
+            }
+        ]
+    });
+
+    return ContentService.createTextOutput("");
+}
+
 /* --- modal form submissions */
+
+function doSubmitAdd (params) {
+    var title = params.view.state.values.title.title_value.value;
+    var from = parseAPIDate(params.view.state.values.from.from_value.selected_date);
+    var to = parseAPIDate(params.view.state.values.to.to_value.selected_date);
+    to.setDate(to.getDate() + 1);
+
+    var event = CalendarApp.getDefaultCalendar().createAllDayEvent(title, from, to);
+
+    postToSlack([
+        { type: "divider" },
+        formatEvent(event, false, true)
+    ]);
+
+    return ContentService.createTextOutput("");
+}
+
+function doSubmitAddTask (params) {
+    var title = params.view.state.values.title.title_value.value;
+    var task = createTask(title);
+
+    postToSlack([
+        { type: "divider" },
+        formatTask(task, false, true)
+    ]);
+
+    return ContentService.createTextOutput("");
+}
 
 function doSubmitEdit (params) {
     var event = CalendarApp.getEventById(params.view.private_metadata);
@@ -442,7 +534,11 @@ function doPost (e) {
                 throw "Unknown action";
             }
         } else if (params.type == 'view_submission') {
-            if (params.view.callback_id == "edit") {
+            if (params.view.callback_id == "add") {
+                return doSubmitAdd(params);
+            } else if (params.view.callback_id == "add_task") {
+                return doSubmitAddTask(params);
+            } else if (params.view.callback_id == "edit") {
                 return doSubmitEdit(params);
             } else if (params.view.callback_id == "edit_task") {
                 return doSubmitEditTask(params);
@@ -452,6 +548,14 @@ function doPost (e) {
                 return doSubmitDeleteTask(params);
             } else {
                 throw "Unknown view";
+            }
+        } else if (params.type == 'shortcut') {
+            if (params.callback_id == "add") {
+                return doActionAdd(params);
+            } else if (params.callback_id == "add_task") {
+                return doActionAddTask(params);
+            } else {
+                throw "Unknown shortcut";
             }
         } else {
             throw "Unknown action type";
