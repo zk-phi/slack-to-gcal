@@ -46,7 +46,7 @@ function parseStr (str) {
     const format = (
         "^" + /* BOL */
         "(.*?)" + /* 1: any title */
-        " +" + /* delimiter */
+        "[ 　]+" + /* delimiter */
         /* either ... */
         "(?:" + (
             /* specific date (2:optional yyyy)(3:optional month MM)(4:date dd) */
@@ -59,7 +59,7 @@ function parseStr (str) {
         /* 7: and optional ... */
         "(" + (
             /* delimiter and */
-            " ?- ?" +
+            "[ 　]?-[ 　]?" +
             /* either ... */
             "(?:" + (
                 /* specific date (8:optional yyyy)(9:optional month MM)(10:date dd) */
@@ -108,7 +108,7 @@ function parseAPIDate (str) {
 /* --- slash commands */
 
 function doAddTask (params) {
-    var res = params.text.match(/^todo +(.+)$/);
+    var res = params.text.match(/^todo[ 　]+(.+)$/);
     var task = createTask(res[1]);
 
     postToSlack([
